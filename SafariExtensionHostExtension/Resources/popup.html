@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		/>
+		<title>Safari Extension Host</title>
+		<link
+			rel="stylesheet"
+			href="popup.css"
+		/>
+	</head>
+	<body>
+		<div id="container">
+			<div id="list-view">
+				<header class="app-header">
+					<div class="header-left">
+						<span class="app-title">Hosted Extensions</span>
+					</div>
+					<button
+						id="btn-settings"
+						class="icon-button"
+						title="Open Settings"
+					>
+						&#x2699;
+					</button>
+				</header>
+				<div
+					id="extension-list"
+					class="extension-list"
+				></div>
+				<footer class="app-footer">
+					<span id="extension-count">0 extensions loaded</span>
+				</footer>
+			</div>
+
+			<div
+				id="popup-view"
+				hidden
+			>
+				<header class="popup-header">
+					<button
+						id="btn-back"
+						class="nav-button"
+					>
+						&larr; Back
+					</button>
+					<span
+						id="popup-title"
+						class="popup-title"
+						>Extension Popup</span
+					>
+					<button
+						id="btn-close-view"
+						class="icon-button"
+					>
+						&times;
+					</button>
+				</header>
+				<div class="frame-container">
+					<iframe
+						id="popup-frame"
+						src="about:blank"
+						sandbox="allow-scripts allow-forms allow-same-origin"
+					></iframe>
+				</div>
+			</div>
+		</div>
+		<script src="popup.js"></script>
+	</body>
+</html>

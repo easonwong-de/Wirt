@@ -1,0 +1,170 @@
+:root {
+	--bg-color: #ffffff;
+	--text-color: #1d1d1f;
+	--secondary-text: #86868b;
+	--border-color: #d2d2d7;
+	--hover-color: #f5f5f7;
+	--badge-bg: #0071e3;
+	--badge-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg-color: #1e1e1e;
+		--text-color: #f5f5f7;
+		--secondary-text: #a1a1a6;
+		--border-color: #38383a;
+		--hover-color: #2c2c2e;
+	}
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	width: 360px;
+	min-height: 400px;
+	max-height: 580px;
+	background-color: var(--bg-color);
+	color: var(--text-color);
+	font-family:
+		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+		sans-serif;
+	font-size: 13px;
+	overflow: hidden;
+}
+
+#container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.app-header,
+.popup-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.header-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.app-icon {
+	width: 20px;
+	height: 20px;
+	border-radius: 4px;
+}
+
+.app-title {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.icon-button,
+.nav-button {
+	background: transparent;
+	border: none;
+	color: var(--text-color);
+	cursor: pointer;
+	font-size: 13px;
+	padding: 4px 6px;
+	border-radius: 4px;
+}
+
+.icon-button:hover,
+.nav-button:hover {
+	background-color: var(--hover-color);
+}
+
+.extension-list {
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	max-height: 480px;
+}
+
+.extension-row {
+	display: flex;
+	align-items: center;
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--border-color);
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	user-select: none;
+}
+
+.extension-row:hover {
+	background-color: var(--hover-color);
+}
+
+.extension-row.state-none {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.ext-icon {
+	width: 28px;
+	height: 28px;
+	border-radius: 6px;
+	margin-right: 12px;
+	object-fit: cover;
+}
+
+.ext-info {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	overflow: hidden;
+}
+
+.ext-name {
+	font-weight: 500;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.ext-subtitle {
+	font-size: 11px;
+	color: var(--secondary-text);
+	margin-top: 2px;
+}
+
+.ext-action-badge {
+	padding: 2px 6px;
+	border-radius: 10px;
+	background-color: var(--badge-bg);
+	color: var(--badge-text);
+	font-size: 10px;
+	font-weight: 600;
+	margin-left: 8px;
+}
+
+.app-footer {
+	padding: 8px 14px;
+	border-top: 1px solid var(--border-color);
+	font-size: 11px;
+	color: var(--secondary-text);
+	text-align: center;
+}
+
+.frame-container {
+	flex: 1;
+	width: 100%;
+	height: 480px;
+}
+
+#popup-frame {
+	width: 100%;
+	height: 100%;
+	border: none;
+}

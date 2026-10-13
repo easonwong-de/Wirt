@@ -1,0 +1,14 @@
+# Safari Extension Host
+
+Run Chrome and Firefox extensions directly in Safari on macOS.
+
+## Getting Started
+
+1. Enable **Develop > Allow Unsigned Extensions** in Safari.
+2. Turn on **Safari Extension Host** in **Safari > Settings > Extensions**.
+3. Install extensions from the [Chrome Web Store](https://chromewebstore.google.com) or [Firefox Add-ons](https://addons.mozilla.org).
+4. Click the extension toolbar icon in Safari to use installed extensions.
+
+## Documentation
+
+See [`docs/architecture.md`](docs/architecture.md) for technical architecture and design specifications.
