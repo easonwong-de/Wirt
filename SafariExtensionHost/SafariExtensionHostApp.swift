@@ -8,7 +8,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   private static let agentPlistName = "de.easonwong.SafariExtensionHost.agent.plist"
   private static let backgroundArgument = "--background"
 
-  private var statusItem: NSStatusItem?
   private var window: NSWindow?
 
   static func main() {
@@ -33,7 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   private func setupInterface() {
     setupMainMenu()
-    setupStatusItem()
     setupWindow()
   }
 
@@ -61,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         os_log(.error, "Launch agent hand-off failed: %@", error.localizedDescription)
         connection.invalidate()
         Task { @MainActor in
+          HostXPCListener.shared.start()
           self.setupInterface()
           self.showSettings()
         }
@@ -101,35 +100,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     NSApp.terminate(nil)
   }
 
-  private func setupStatusItem() {
-    statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    if let button = statusItem?.button {
-      let image = NSImage(
-        systemSymbolName: "puzzlepiece.extension",
-        accessibilityDescription: "Safari Extension Host")
-      image?.isTemplate = true
-      button.image = image
-    }
-
-    let menu = NSMenu()
-    let settingsItem = NSMenuItem(
-      title: "Settings…",
-      action: #selector(showSettings),
-      keyEquivalent: ",")
-    settingsItem.target = self
-    menu.addItem(settingsItem)
-
-    menu.addItem(NSMenuItem.separator())
-
-    let quitItem = NSMenuItem(
-      title: "Quit",
-      action: #selector(quitApp),
-      keyEquivalent: "q")
-    quitItem.target = self
-    menu.addItem(quitItem)
-
-    statusItem?.menu = menu
-  }
 
   private func updateWindowSize(to contentHeight: CGFloat, animated: Bool) {
     guard let window = self.window else { return }
