@@ -8,15 +8,32 @@ public final class PackageIngestionService: Sendable {
       for: .applicationSupportDirectory, in: .userDomainMask
     ).first!
     let hostDir = appSupport.appendingPathComponent(
-      "com.eason.SafariExtensionHost/Extensions", isDirectory: true)
+      "de.easonwong.SafariExtensionHost/Extensions", isDirectory: true)
     try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
     return hostDir
   }
 
   public func ingest(from url: URL) async throws -> ExtensionDescriptor {
-    let (tempFile, _) = try await URLSession.shared.download(from: url)
-    let data = try Data(contentsOf: tempFile)
+    var request = URLRequest(url: url)
+    request.setValue(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+      forHTTPHeaderField: "User-Agent")
+    request.setValue("*/*", forHTTPHeaderField: "Accept")
 
+    let (tempFile, response) = try await URLSession.shared.download(for: request)
+    if let httpResponse = response as? HTTPURLResponse,
+      !(200...299).contains(httpResponse.statusCode)
+    {
+      throw NSError(
+        domain: "PackageIngestionService",
+        code: httpResponse.statusCode,
+        userInfo: [
+          NSLocalizedDescriptionKey: "Download failed with HTTP \(httpResponse.statusCode)"
+        ]
+      )
+    }
+
+    let data = try Data(contentsOf: tempFile)
     let extId = deriveExtensionId(from: url)
     let targetDir = storageDirectory.appendingPathComponent(extId, isDirectory: true)
     try? FileManager.default.removeItem(at: targetDir)
@@ -28,11 +45,24 @@ public final class PackageIngestionService: Sendable {
   }
 
   private func deriveExtensionId(from url: URL) -> String {
-    let lastComponent = url.deletingPathExtension().lastPathComponent
-    if lastComponent.isEmpty || lastComponent == "crx" || lastComponent == "xpi" {
-      return String(UUID().uuidString.prefix(16).lowercased())
+    if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+      if let xItem = components.queryItems?.first(where: { $0.name == "x" })?.value {
+        if let match = xItem.range(of: "id=([a-z0-9]{32})", options: .regularExpression) {
+          let idStr = String(xItem[match]).replacingOccurrences(of: "id=", with: "")
+          if !idStr.isEmpty { return idStr.lowercased() }
+        }
+      }
+      if let idItem = components.queryItems?.first(where: { $0.name == "id" })?.value,
+        idItem.count == 32
+      {
+        return idItem.lowercased()
+      }
     }
-    return lastComponent.lowercased()
+    let lastComponent = url.deletingPathExtension().lastPathComponent
+    if !lastComponent.isEmpty && lastComponent != "crx" && lastComponent != "xpi" {
+      return lastComponent.lowercased()
+    }
+    return String(UUID().uuidString.prefix(16).lowercased())
   }
 
   private func extractPackage(data: Data, to destination: URL) throws {
@@ -68,6 +98,19 @@ public final class PackageIngestionService: Sendable {
     let version = json["version"] as? String ?? "1.0.0"
     let manifestVersion = json["manifest_version"] as? Int ?? 3
     let permissions = json["permissions"] as? [String] ?? []
+
+    var resolvedId = fallbackId
+    if let bss = json["browser_specific_settings"] as? [String: Any],
+      let gecko = bss["gecko"] as? [String: Any],
+      let geckoId = gecko["id"] as? String, !geckoId.isEmpty
+    {
+      resolvedId = geckoId
+    } else if let apps = json["applications"] as? [String: Any],
+      let gecko = apps["gecko"] as? [String: Any],
+      let geckoId = gecko["id"] as? String, !geckoId.isEmpty
+    {
+      resolvedId = geckoId
+    }
 
     var backgroundEntry: BackgroundEntry?
     if let bg = json["background"] as? [String: Any] {
@@ -107,7 +150,7 @@ public final class PackageIngestionService: Sendable {
     }
 
     return ExtensionDescriptor(
-      id: fallbackId,
+      id: resolvedId,
       name: name,
       version: version,
       manifestVersion: manifestVersion,

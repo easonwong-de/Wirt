@@ -84,6 +84,79 @@ public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMe
     // Handle bridge messages
   }
 
+  public func getMatchingScripts(for pageUrl: String) -> [[String: Any]] {
+    guard let url = URL(string: pageUrl) else { return [] }
+    let storageDir = PackageIngestionService.shared.storageDirectory
+    guard
+      let items = try? FileManager.default.contentsOfDirectory(
+        at: storageDir, includingPropertiesForKeys: nil)
+    else {
+      return []
+    }
+
+    var matchingExtensions: [[String: Any]] = []
+
+    for item in items where item.hasDirectoryPath {
+      guard
+        let desc = try? PackageIngestionService.shared.parseManifest(
+          in: item, fallbackId: item.lastPathComponent)
+      else {
+        continue
+      }
+
+      var scripts: [[String: String]] = []
+      var styles: [String] = []
+
+      for cs in desc.contentScripts {
+        if matchesAnyPattern(url: url, patterns: cs.matches) {
+          for jsPath in cs.js {
+            let fileUrl = item.appendingPathComponent(jsPath)
+            if let content = try? String(contentsOf: fileUrl, encoding: .utf8) {
+              scripts.append(["code": content, "path": jsPath])
+            }
+          }
+          for cssPath in cs.css {
+            let fileUrl = item.appendingPathComponent(cssPath)
+            if let content = try? String(contentsOf: fileUrl, encoding: .utf8) {
+              styles.append(content)
+            }
+          }
+        }
+      }
+
+      if !scripts.isEmpty || !styles.isEmpty {
+        matchingExtensions.append([
+          "id": desc.id,
+          "scripts": scripts,
+          "styles": styles,
+        ])
+      }
+    }
+
+    return matchingExtensions
+  }
+
+  private func matchesAnyPattern(url: URL, patterns: [String]) -> Bool {
+    for pattern in patterns {
+      if pattern == "<all_urls>" {
+        if let scheme = url.scheme, scheme == "http" || scheme == "https" {
+          return true
+        }
+      } else {
+        let escaped = NSRegularExpression.escapedPattern(for: pattern)
+        let regexPattern = "^" + escaped.replacingOccurrences(of: "\\*", with: ".*") + "$"
+        if let regex = try? NSRegularExpression(pattern: regexPattern, options: .caseInsensitive) {
+          let str = url.absoluteString
+          let range = NSRange(str.startIndex..<str.endIndex, in: str)
+          if regex.firstMatch(in: str, options: [], range: range) != nil {
+            return true
+          }
+        }
+      }
+    }
+    return false
+  }
+
   private func mimeForExtension(_ ext: String) -> String {
     switch ext.lowercased() {
     case "html", "htm": return "text/html"

@@ -55,7 +55,7 @@ flowchart LR
     WV -->|"Bridge API Calls"| Bridge["WKScriptMessageHandler (hostBridge)"]
 ```
 
-1. **Origin Isolation:** Each extension is assigned an isolated origin via `ext-bg://<extension_id>/`. A custom `WKURLSchemeHandler` maps requests directly to the uncompressed package directory in `~/Library/Application Support/com.eason.SafariExtensionHost/Extensions/<extension_id>/`.
+1. **Origin Isolation:** Each extension is assigned an isolated origin via `ext-bg://<extension_id>/`. A custom `WKURLSchemeHandler` maps requests directly to the uncompressed package directory in `~/Library/Application Support/de.easonwong.SafariExtensionHost/Extensions/<extension_id>/`.
 2. **Environment Injection:** Before loading background scripts, a `WKUserScript` injects the `chrome.*` and `browser.*` emulation layer at document start.
 3. **Execution Harness:** The supervisor synthesises an HTML document loading background scripts in sequence:
     ```html
@@ -158,8 +158,8 @@ sequenceDiagram
 }
 ```
 
-- **Persistence:** `SafariExtensionWorker` opens a persistent native port using `browser.runtime.connectNative("application.id")`.
-- **Process Relay:** `SafariWebExtensionHandler` connects to the Host application via an `NSXPCConnection` bound to Mach service `com.eason.SafariExtensionHost.mach`.
+- **Native Messaging:** `background.js` forwards envelopes via `browser.runtime.sendNativeMessage("application.id", envelope)`.
+- **Process Relay:** `SafariWebExtensionHandler` connects to the Host application via an `NSXPCConnection` bound to Mach service `de.easonwong.SafariExtensionHost.mach`.
 
 ---
 

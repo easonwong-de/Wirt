@@ -1,8 +1,9 @@
 import Foundation
+import os.log
 
 public final class HostXPCListener: NSObject, NSXPCListenerDelegate, HostXPCProtocol {
   public static let shared = HostXPCListener()
-  public static let machServiceName = "com.eason.SafariExtensionHost.mach"
+  public static let machServiceName = "de.easonwong.SafariExtensionHost.mach"
 
   private var listener: NSXPCListener?
 
@@ -11,13 +12,21 @@ public final class HostXPCListener: NSObject, NSXPCListenerDelegate, HostXPCProt
     listener.delegate = self
     listener.resume()
     self.listener = listener
+    os_log(.default, "HostXPCListener resumed on Mach service: %@", Self.machServiceName)
   }
 
   public func listener(
     _ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection
   ) -> Bool {
+    os_log(.default, "HostXPCListener accepting incoming connection")
     newConnection.exportedInterface = NSXPCInterface(with: HostXPCProtocol.self)
     newConnection.exportedObject = self
+    newConnection.interruptionHandler = {
+      os_log(.default, "HostXPCListener connection interrupted")
+    }
+    newConnection.invalidationHandler = {
+      os_log(.default, "HostXPCListener connection invalidated")
+    }
     newConnection.resume()
     return true
   }
@@ -39,6 +48,12 @@ public final class HostXPCListener: NSObject, NSXPCListenerDelegate, HostXPCProt
         ExtensionSupervisor.shared.dispatchActionClick(extensionId: extId, tabMetadata: tab)
         reply(["status": "success"])
       }
+    case "GET_MATCHING_SCRIPTS":
+      let pageUrl = message["url"] as? String ?? ""
+      Task { @MainActor in
+        let matching = ExtensionSupervisor.shared.getMatchingScripts(for: pageUrl)
+        reply(["matchingExtensions": matching])
+      }
     case "INSTALL_PACKAGE_FROM_URL":
       let downloadUrl = message["downloadUrl"] as? String ?? ""
       if let url = URL(string: downloadUrl) {
@@ -50,7 +65,7 @@ public final class HostXPCListener: NSObject, NSXPCListenerDelegate, HostXPCProt
                 descriptor.id, isDirectory: true)
               ExtensionSupervisor.shared.startBackgroundRuntime(for: descriptor, directory: dir)
             }
-            reply(["status": "success", "extensionId": descriptor.id])
+            reply(["status": "success", "extensionId": descriptor.id, "name": descriptor.name])
           } catch {
             reply(["status": "error", "message": error.localizedDescription])
           }

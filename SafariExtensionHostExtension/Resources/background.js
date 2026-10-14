@@ -1,56 +1,69 @@
-let nativePort = null;
-const pendingResponses = new Map();
+const LOG_TAG = "[SafariExtensionHost:Background]";
 
-function connectNativePort() {
-	nativePort = browser.runtime.connectNative("application.id");
-
-	nativePort.onMessage.addListener((envelope) => {
-		handleNativeEnvelope(envelope);
-	});
-
-	nativePort.onDisconnect.addListener(() => {
-		nativePort = null;
-		setTimeout(connectNativePort, 1500);
-	});
+function logInfo(...args) {
+	console.log(LOG_TAG, ...args);
 }
 
-function handleNativeEnvelope(envelope) {
-	if (
-		envelope.correlationId &&
-		pendingResponses.has(envelope.correlationId)
-	) {
-		const resolver = pendingResponses.get(envelope.correlationId);
-		pendingResponses.delete(envelope.correlationId);
-		resolver(envelope.payload);
-		return;
-	}
-
-	if (envelope.type === "UPDATE_BADGE") {
-		browser.action.setBadgeText({ text: envelope.text || "" });
-		if (envelope.color) {
-			browser.action.setBadgeBackgroundColor({ color: envelope.color });
-		}
-	}
+function logWarn(...args) {
+	console.warn(LOG_TAG, ...args);
 }
+
+function logError(...args) {
+	console.error(LOG_TAG, ...args);
+}
+
+logInfo("Background service worker initialised");
 
 function sendNativeEnvelope(envelope) {
 	return new Promise((resolve) => {
-		const correlationId = crypto.randomUUID();
-		envelope.correlationId = correlationId;
-		pendingResponses.set(correlationId, resolve);
-		if (nativePort) {
-			nativePort.postMessage(envelope);
-		} else {
-			resolve({ error: "Native port disconnected" });
+		try {
+			logInfo("Dispatching native message:", envelope.type, envelope);
+			browser.runtime.sendNativeMessage(
+				"application.id",
+				envelope,
+				(response) => {
+					const err = browser.runtime.lastError;
+					if (err) {
+						logError(
+							"Native messaging error for",
+							envelope.type,
+							err.message || err,
+						);
+						resolve({ error: err.message || String(err) });
+					} else {
+						logInfo(
+							"Received native response for",
+							envelope.type,
+							response,
+						);
+						resolve(response || {});
+					}
+				},
+			);
+		} catch (err) {
+			logError("Failed to invoke sendNativeMessage:", err);
+			resolve({ error: String(err) });
 		}
 	});
 }
 
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+	if (!request || !request.type) return false;
+
+	logInfo(
+		"Received runtime message:",
+		request.type,
+		"from sender:",
+		sender.url || `tab:${sender.tab?.id || "unknown"}`,
+	);
+
 	if (request.type === "GET_INSTALLED_EXTENSIONS") {
-		sendNativeEnvelope({ type: "GET_INSTALLED_EXTENSIONS" }).then(
-			sendResponse,
-		);
+		sendNativeEnvelope({ type: "GET_INSTALLED_EXTENSIONS" })
+			.then((res) => sendResponse(res))
+			.catch((err) => {
+				logError("Error in GET_INSTALLED_EXTENSIONS:", err);
+				sendResponse({ error: String(err) });
+			});
 		return true;
 	}
 
@@ -59,7 +72,12 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			type: "DISPATCH_ACTION_CLICK",
 			extensionId: request.extensionId,
 			tab: request.tab,
-		}).then(sendResponse);
+		})
+			.then((res) => sendResponse(res))
+			.catch((err) => {
+				logError("Error in DISPATCH_ACTION_CLICK:", err);
+				sendResponse({ error: String(err) });
+			});
 		return true;
 	}
 
@@ -67,7 +85,12 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		sendNativeEnvelope({
 			type: "GET_MATCHING_SCRIPTS",
 			url: request.url,
-		}).then(sendResponse);
+		})
+			.then((res) => sendResponse(res))
+			.catch((err) => {
+				logError("Error in GET_MATCHING_SCRIPTS:", err);
+				sendResponse({ matchingExtensions: [] });
+			});
 		return true;
 	}
 
@@ -81,53 +104,53 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 				url: sender.url,
 			},
 			payload: request.payload,
-		}).then(sendResponse);
+		})
+			.then((res) => sendResponse(res))
+			.catch((err) => {
+				logError("Error in RUNTIME_SEND_MESSAGE:", err);
+				sendResponse({ error: String(err) });
+			});
 		return true;
 	}
 
 	if (request.type === "INSTALL_PACKAGE_FROM_URL") {
+		logInfo("Installing package from URL:", request.downloadUrl);
 		sendNativeEnvelope({
 			type: "INSTALL_PACKAGE_FROM_URL",
 			downloadUrl: request.downloadUrl,
 			referrer: request.referrer,
-		}).then(sendResponse);
+		})
+			.then((res) => {
+				logInfo("Installation completed with response:", res);
+				sendResponse(res);
+			})
+			.catch((err) => {
+				logError("Error in INSTALL_PACKAGE_FROM_URL:", err);
+				sendResponse({ error: String(err) });
+			});
 		return true;
 	}
+
+	return false;
 });
 
 browser.webNavigation.onBeforeNavigate.addListener((details) => {
 	if (details.frameId !== 0) return;
-	const url = new URL(details.url);
-	if (url.pathname.endsWith(".crx") || url.pathname.endsWith(".xpi")) {
-		sendNativeEnvelope({
-			type: "INSTALL_PACKAGE_FROM_URL",
-			downloadUrl: details.url,
-		});
-		browser.tabs.update(details.tabId, { url: "about:blank" });
-	}
-});
+	try {
+		const url = new URL(details.url);
+		const isCrx = url.pathname.endsWith(".crx");
+		const isXpi =
+			url.pathname.endsWith(".xpi") ||
+			url.pathname.includes("/downloads/file/");
 
-browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-	if (changeInfo.status === "complete" || changeInfo.url) {
-		if (nativePort) {
-			nativePort.postMessage({
-				type: "TAB_UPDATED",
-				tabId,
-				changeInfo,
-				tab,
+		if (isCrx || isXpi) {
+			logInfo("Navigation interceptor matched package URL:", details.url);
+			sendNativeEnvelope({
+				type: "INSTALL_PACKAGE_FROM_URL",
+				downloadUrl: details.url,
 			});
 		}
+	} catch (err) {
+		logWarn("Error parsing navigation URL:", err);
 	}
 });
-
-browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
-	if (nativePort) {
-		nativePort.postMessage({
-			type: "TAB_REMOVED",
-			tabId,
-			removeInfo,
-		});
-	}
-});
-
-connectNativePort();
