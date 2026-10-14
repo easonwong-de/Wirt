@@ -21,7 +21,7 @@ flowchart LR
     end
 
     subgraph HostApp["macOS Host Application"]
-        XPCListener["Mach XPC Listener"]
+        XPCListener["Mach XPC Listener (launchd agent)"]
         Supervisor["Extension Supervisor"]
         Ingestion["Package Ingestion Service"]
         Storage[("Extension Storage")]
@@ -159,7 +159,9 @@ sequenceDiagram
 ```
 
 - **Native Messaging:** `background.js` forwards envelopes via `browser.runtime.sendNativeMessage("application.id", envelope)`.
-- **Process Relay:** `SafariWebExtensionHandler` connects to the Host application via an `NSXPCConnection` bound to Mach service `de.easonwong.SafariExtensionHost.mach`.
+- **Process Relay:** `SafariWebExtensionHandler` opens one `NSXPCConnection` per request to Mach service `de.easonwong.SafariExtensionHost.mach`.
+- **Launch Agent:** The host app registers itself as a launch agent through `SMAppService.agent(plistName:)`. The agent plist in `Contents/Library/LaunchAgents/` owns the Mach service, so `launchd` starts the host app with `--background` on the first lookup.
+- **Hand-off:** A user-started host app instance registers the agent, asks it to show settings over XPC, and quits. The agent instance is the only process running the supervisor.
 
 ---
 

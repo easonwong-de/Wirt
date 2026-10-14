@@ -24,7 +24,8 @@
 		BFE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */; };
 		BFE100040000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */; };
 		BFE100050000000000000000 /* IPC/HostXPCListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* IPC/HostXPCListener.swift */; };
-		BFE100060000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100060000000000000000 /* IPC/HostXPCProtocol.swift */; };
+		BFE100060000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */; };
+		BFE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist in Embed Launch Agents */ = {isa = PBXBuildFile; fileRef = FRE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,15 @@
 				9BFC4B5C307EDCE90098F3AD /* SafariExtensionHostExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+		};
+		CPF100010000000000000000 /* Embed Launch Agents */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = Contents/Library/LaunchAgents;
+			dstSubfolder = Wrapper;
+			files = (
+				BFE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist in Embed Launch Agents */,
+			);
+			name = "Embed Launch Agents";
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -72,7 +82,7 @@
 		FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supervisor/ExtensionSupervisor.swift; sourceTree = "<group>"; };
 		FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCProtocol.swift; sourceTree = "<group>"; };
 		FRE100050000000000000000 /* IPC/HostXPCListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCListener.swift; sourceTree = "<group>"; };
-		FRE100060000000000000000 /* IPC/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCProtocol.swift; sourceTree = "<group>"; };
+		FRE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = LaunchAgents/de.easonwong.SafariExtensionHost.agent.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +127,7 @@
 				FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */,
 				FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */,
 				FRE100050000000000000000 /* IPC/HostXPCListener.swift */,
+				FRE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist */,
 				ENT00010000000000000000 /* SafariExtensionHost.entitlements */,
 				9BFC4B54307EDCE90098F3AD /* Assets.xcassets */,
 				9BFC4B56307EDCE90098F3AD /* Info.plist */,
@@ -127,7 +138,6 @@
 		9BFC4B5F307EDCE90098F3AD /* SafariExtensionHostExtension */ = {
 			isa = PBXGroup;
 			children = (
-				FRE100060000000000000000 /* IPC/HostXPCProtocol.swift */,
 				9BFC4B6C307EDCE90098F3AD /* Resources */,
 				9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */,
 				ENT00020000000000000000 /* SafariExtensionHostExtension.entitlements */,
@@ -162,6 +172,7 @@
 				9BFC4B3D307EDCE80098F3AD /* Frameworks */,
 				9BFC4B3E307EDCE80098F3AD /* Resources */,
 				9BFC4B68307EDCE90098F3AD /* Embed Foundation Extensions */,
+				CPF100010000000000000000 /* Embed Launch Agents */,
 			);
 			buildRules = (
 			);
@@ -332,7 +343,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -391,7 +402,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -409,7 +420,6 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SafariExtensionHostExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SafariExtensionHostExtension;
@@ -419,7 +429,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -445,7 +455,6 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SafariExtensionHostExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SafariExtensionHostExtension;
@@ -455,7 +464,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -504,7 +513,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -514,7 +523,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = de.easonwong.SafariExtensionHost;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -556,7 +564,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -566,7 +574,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = de.easonwong.SafariExtensionHost;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;

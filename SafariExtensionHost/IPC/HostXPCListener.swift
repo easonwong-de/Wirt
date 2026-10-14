@@ -1,18 +1,24 @@
-import Foundation
+import AppKit
 import os.log
 
 public final class HostXPCListener: NSObject, NSXPCListenerDelegate, HostXPCProtocol {
   public static let shared = HostXPCListener()
-  public static let machServiceName = "de.easonwong.SafariExtensionHost.mach"
 
   private var listener: NSXPCListener?
 
   public func start() {
-    let listener = NSXPCListener(machServiceName: Self.machServiceName)
+    let listener = NSXPCListener(machServiceName: HostXPC.serviceName)
     listener.delegate = self
     listener.resume()
     self.listener = listener
-    os_log(.default, "HostXPCListener resumed on Mach service: %@", Self.machServiceName)
+    os_log(.default, "HostXPCListener resumed on Mach service: %@", HostXPC.serviceName)
+  }
+
+  public func showSettings(withReply reply: @escaping () -> Void) {
+    Task { @MainActor in
+      (NSApp.delegate as? AppDelegate)?.showSettings()
+      reply()
+    }
   }
 
   public func listener(

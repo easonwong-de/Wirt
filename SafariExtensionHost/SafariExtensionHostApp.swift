@@ -1,8 +1,13 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
+import os.log
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+  private static let agentPlistName = "de.easonwong.SafariExtensionHost.agent.plist"
+  private static let backgroundArgument = "--background"
+
   private var statusItem: NSStatusItem?
   private var window: NSWindow?
 
@@ -16,10 +21,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   private var hasInitialisedWindowSize = false
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    HostXPCListener.shared.start()
+    if CommandLine.arguments.contains(Self.backgroundArgument) {
+      NSApp.setActivationPolicy(.accessory)
+      HostXPCListener.shared.start()
+      setupInterface()
+    } else {
+      registerAgent()
+      handOffToAgent()
+    }
+  }
+
+  private func setupInterface() {
     setupMainMenu()
     setupStatusItem()
     setupWindow()
+  }
+
+  private func registerAgent() {
+    let agent = SMAppService.agent(plistName: Self.agentPlistName)
+    if agent.status != .enabled {
+      do {
+        try agent.register()
+      } catch {
+        os_log(.error, "Launch agent registration failed: %@", error.localizedDescription)
+      }
+    }
+    if agent.status == .requiresApproval {
+      SMAppService.openSystemSettingsLoginItems()
+    }
+  }
+
+  private func handOffToAgent() {
+    let connection = NSXPCConnection(machServiceName: HostXPC.serviceName, options: [])
+    connection.remoteObjectInterface = NSXPCInterface(with: HostXPCProtocol.self)
+    connection.resume()
+
+    let agent =
+      connection.remoteObjectProxyWithErrorHandler { error in
+        os_log(.error, "Launch agent hand-off failed: %@", error.localizedDescription)
+        connection.invalidate()
+        Task { @MainActor in
+          self.setupInterface()
+          self.showSettings()
+        }
+      } as? HostXPCProtocol
+
+    agent?.showSettings {
+      connection.invalidate()
+      Task { @MainActor in
+        NSApp.terminate(nil)
+      }
+    }
   }
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool
@@ -147,10 +199,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     hasInitialisedWindowSize = true
     window.center()
-
-    NSApp.setActivationPolicy(.regular)
-    window.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
   }
 
   private func setupMainMenu() {
