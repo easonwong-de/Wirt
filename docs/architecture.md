@@ -2,206 +2,279 @@
 
 ## 1. System Overview
 
-The host runs third-party Chrome and Firefox extensions on Safari without modifying extension bundles.
+The Safari Extension Host runs unmodified Chrome and Firefox extensions in Safari.
 
-Safari Web Extensions enforce a strict Content Security Policy (`script-src 'self'`) within extension service workers, prohibiting dynamic remote code execution. Downloaded background scripts execute inside headless `WKWebView` instances in the companion macOS application, while content scripts and user interfaces are bridged into Safari.
+Safari Web Extensions enforce a strict Content Security Policy (`script-src 'self'`). Therefore, dynamic remote script execution is prohibited inside the extension worker. To resolve this restriction, the host runs background scripts inside headless WebViews within a companion macOS application. Content scripts and extension popups remain inside Safari and bridge into the host application.
 
 ```mermaid
 flowchart LR
-    subgraph Safari["Safari Browser Process"]
-        subgraph Webpage["Webpage DOM"]
-            Bootstrapper["Bootstrapper (bootstrapper.js)"]
-            Isolated["Isolated World (chrome.* Shim)"]
-        end
-        subgraph WebExt["Safari Web Extension"]
-            Worker["Extension Worker (background.js)"]
-            Popup["Meta-Popup Hub (popup.html)"]
-            Handler["SafariWebExtensionHandler"]
-        end
+    subgraph Safari["Safari Web Extension<br/>(SafariExtensionHostExtension.appex)"]
+        direction TB
+        Boot["Bootstrapper<br/>(bootstrapper.js)"]
+        Worker["Extension Worker<br/>(background.js)"]
+        Handler["Extension Handler<br/>(SafariWebExtensionHandler.swift)"]
+        Boot -->|"sendMessage()"| Worker
+        Worker -->|"sendNativeMessage()"| Handler
     end
 
-    subgraph HostApp["macOS Host Application"]
-        XPCListener["Mach XPC Listener (launchd agent)"]
-        Supervisor["Extension Supervisor"]
-        Ingestion["Package Ingestion Service"]
-        Storage[("Extension Storage")]
-        subgraph Pool["Headless Background Pool"]
-            WKA["WKWebView (Extension A)"]
-            WKB["WKWebView (Extension B)"]
+    subgraph MacOS["macOS"]
+        direction TB
+        Launchd["launchd"]
+        subgraph Host["Host App<br/>(SafariExtensionHost.app)"]
+            direction TB
+            Listener["XPC Listener<br/>(HostXPCListener.swift)"]
+            Supervisor["Extension Supervisor<br/>(ExtensionSupervisor.swift)"]
+            Runtime["Background Runtime (WKWebView)"]
+            Storage[("Extension Storage")]
+            Listener --> Supervisor
+            Supervisor --> Runtime
+            Supervisor --> Storage
         end
+        Launchd -->|"spawn"| Host
     end
 
-    Bootstrapper -->|"sendMessage"| Worker
-    Popup -->|"sendMessage"| Worker
-    Worker -->|"connectNative"| Handler
-    Handler ==>|"NSXPCConnection"| XPCListener
-    XPCListener --> Supervisor
-    Supervisor --> Pool
-    Ingestion --> Storage
-    Storage --> Supervisor
+    Safari ==>|"NSXPCConnection"| MacOS
 ```
+
+The system contains two bundle targets:
+1. **Safari Extension Companion (`SafariExtensionHostExtension.appex`):** Runs inside Safari to intercept web requests, manage browser tabs, and forward native messages.
+2. **Host Application (`SafariExtensionHost.app`):** Runs on macOS to manage extension lifecycles, execute background scripts, and persist files.
 
 ---
 
-## 2. Running Background Scripts
+## 2. Process Lifecycle and IPC
 
-Background scripts and service workers require standard browser Web APIs (DOM, Fetch, WebSockets, Storage).
+The host application operates as a background launch agent managed by `launchd`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as User
+    participant Launcher as Host App (launcher)
+    participant Launchd as launchd
+    participant Agent as Host App (agent)
+
+    User->>Launcher: Open app
+    Launcher->>Launchd: registerAgent()
+    Launcher->>Launchd: Look up Mach service
+    opt Agent not running
+        Launchd->>Agent: Spawn with --background
+    end
+    Launcher->>Agent: showSettings()
+    Agent-->>Launcher: Reply
+    Launcher->>Launcher: terminate()
+    User->>Agent: Close window
+    Agent->>Agent: windowShouldClose()
+```
+
+1. **Launch Agent Registration:** On initial startup, the host registers `de.easonwong.SafariExtensionHost.agent.plist` through `SMAppService.agent(plistName:)`. The plist assigns ownership of the Mach service `de.easonwong.SafariExtensionHost.mach` to `launchd`.
+2. **On-Demand Activation:** When Safari sends a request, `SafariWebExtensionHandler` resolves the Mach service. If the host is not running, `launchd` starts `SafariExtensionHost` with `--background`.
+3. **Single-Instance Hand-off:** When a user launches `SafariExtensionHost.app` directly, the new instance registers the agent and sends an XPC `showSettings()` call to the active Mach service. The launcher then terminates itself immediately.
+4. **Headless Background Execution:** When the user closes the settings window, the application hides the window and sets its policy to `.accessory`. The process remains active silently to retain in-memory background runtimes.
+5. **Transient XPC Connections:** `SafariWebExtensionHandler` creates and invalidates an `NSXPCConnection` for each incoming request. This prevents stale sockets across extension reloads.
+
+---
+
+## 3. Background Script Execution
+
+Background scripts and extension service workers require standard browser Web APIs, such as DOM, Fetch, and WebSockets. The host provides these environments through headless `WKWebView` instances.
 
 ```mermaid
 flowchart LR
-    Host["Supervisor"] -->|"Instantiate"| WV["Headless WKWebView"]
-    Scheme["WKURLSchemeHandler (ext-bg://)"] -->|"Serve Assets"| WV
-    Script["WKUserScript (chrome-shim.js)"] -->|"Inject Polyfill"| WV
-    WV -->|"Bridge API Calls"| Bridge["WKScriptMessageHandler (hostBridge)"]
+    subgraph SupervisorSub["Extension Supervisor<br/>(ExtensionSupervisor.swift)"]
+        direction TB
+        Init["startBackgroundRuntime()"]
+        Scheme["WKURLSchemeHandler"]
+        Bridge["WKScriptMessageHandler"]
+    end
+
+    subgraph RuntimeSub["Background Runtime (WKWebView)"]
+        direction TB
+        Shim["Shim<br/>(chrome-shim.js)"]
+        Script["Background Script<br/>(background.js)"]
+    end
+
+    Init -->|"create"| RuntimeSub
+    Scheme -->|"ext-bg://"| RuntimeSub
+    Bridge <-.->|"hostBridge"| RuntimeSub
 ```
 
-1. **Origin Isolation:** Each extension is assigned an isolated origin via `ext-bg://<extension_id>/`. A custom `WKURLSchemeHandler` maps requests directly to the uncompressed package directory in `~/Library/Application Support/de.easonwong.SafariExtensionHost/Extensions/<extension_id>/`.
-2. **Environment Injection:** Before loading background scripts, a `WKUserScript` injects the `chrome.*` and `browser.*` emulation layer at document start.
-3. **Execution Harness:** The supervisor synthesises an HTML document loading background scripts in sequence:
+1. **Origin Isolation:** Each extension receives an isolated origin (`ext-bg://<extension_id>/`). A custom `WKURLSchemeHandler` serves files directly from the extension storage directory on disk.
+2. **Environment Injection:** Before loading background scripts, a `WKUserScript` injects the `chrome.*` and `browser.*` polyfill (`chrome-shim.js`) at document start.
+3. **Execution Harness:** The supervisor synthesises an HTML document to execute background scripts sequentially:
     ```html
     <!DOCTYPE html>
     <html>
-    	<head>
-    		<meta charset="utf-8" />
-    	</head>
-    	<body>
-    		<script src="ext-bg://<extension_id>/background.js"></script>
-    	</body>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <script src="background.js"></script>
+      </body>
     </html>
     ```
-4. **Outbound Bridging:** API calls from the background script dispatch through `window.webkit.messageHandlers.hostBridge.postMessage(...)` to Swift.
+4. **Bridge Dispatch:** API requests from the background runtime post messages through `window.webkit.messageHandlers.hostBridge.postMessage(...)` to Swift handlers.
 
 ---
 
-## 3. Injecting Content Scripts into Webpages
+## 4. Content Script Injection
 
-Content scripts are injected dynamically into web pages visited in Safari.
+Content scripts run directly inside Safari webpages to interact with the DOM.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Page as Webpage DOM
-    participant Boot as Bootstrapper (bootstrapper.js)
-    participant Worker as Safari Extension Worker
-    participant Host as macOS Host Supervisor
+    participant Boot as Bootstrapper<br/>(bootstrapper.js)
+    participant Worker as Extension Worker<br/>(background.js)
+    participant Supervisor as Extension Supervisor<br/>(ExtensionSupervisor.swift)
 
     Page->>Boot: Document start
-    Boot->>Worker: GET_MATCHING_SCRIPTS (location.href)
-    Worker->>Host: Query matching descriptors via Native Messaging / XPC
-    Host-->>Worker: Return matching scripts and styles
+    Boot->>Worker: initialiseMatchingScripts()
+    Worker->>Supervisor: getMatchingScripts()
+    Supervisor-->>Worker: Scripts and styles
     Worker-->>Boot: Script payload
-    Boot->>Page: Append style elements to document.head
-    Boot->>Boot: Evaluate scoped scripts in isolated world
+    Boot->>Page: Inject styles
+    Boot->>Boot: evaluateScopedScript()
 ```
 
-1. **Static Ingestion:** The Safari Extension registers a single static script (`bootstrapper.js`) matching `<all_urls>` at `document_start`.
+1. **Script Registration:** The Safari Extension registers a static script (`bootstrapper.js`) matching `<all_urls>` at `document_start`.
 2. **Rule Matching:** On initialisation, the bootstrapper requests scripts matching `window.location.href` from the host.
-3. **Stylesheet Injection:** CSS rules are appended as `<style data-hosted-ext="<id>">` elements to `document.head`.
-4. **Isolated World Evaluation:**
-    - Safari runs content scripts in an isolated JavaScript world.
-    - The bootstrapper constructs a local `chrome.*` shim.
-    - Scripts are executed within a function scope to avoid global namespace conflicts:
-        ```javascript
-        function evaluateScopedScript(code, extensionId) {
-        	const shim = createShim(extensionId);
-        	const runner = new Function(
-        		"chrome",
-        		"browser",
-        		"window",
-        		"document",
-        		code,
-        	);
-        	runner(shim, shim, window, document);
-        }
-        ```
+3. **Stylesheet Injection:** CSS rules are appended as `<style data-hosted-ext="<id>">` elements into `document.head`.
+4. **Isolated World Evaluation:** The bootstrapper evaluates matched scripts inside an isolated function scope to avoid namespace conflicts:
+    ```javascript
+    function evaluateScopedScript(code, extensionId) {
+      const shim = createShim(extensionId);
+      const runner = new Function(
+        "chrome",
+        "browser",
+        "window",
+        "document",
+        code
+      );
+      runner(shim, shim, window, document);
+    }
+    ```
 
 ---
 
-## 4. Messaging Between Scripts and Background Runtimes
+## 5. Inter-Process Messaging
 
-Communication between Safari content scripts and headless background runtimes traverses a multi-hop bus.
+Communication between content scripts and background runtimes traverses a structured messaging bus.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Content as Content Script
-    participant Worker as Safari Extension Worker
-    participant Handler as SafariWebExtensionHandler
-    participant Host as macOS Host Application
-    participant Runtime as Headless WKWebView
+    participant Worker as Extension Worker<br/>(background.js)
+    participant Handler as Extension Handler<br/>(SafariWebExtensionHandler.swift)
+    participant Listener as XPC Listener<br/>(HostXPCListener.swift)
+    participant Runtime as Background Runtime (WKWebView)
 
-    Content->>Worker: browser.runtime.sendMessage(envelope)
-    Worker->>Handler: port.postMessage(envelope) via connectNative
-    Handler->>Host: handleExtensionMessage via NSXPCConnection
-    Host->>Runtime: evaluateJavaScript(chrome.runtime._dispatchMessage)
-    Runtime-->>Host: hostBridge.postMessage(reply)
-    Host-->>Handler: XPC reply block
-    Handler-->>Worker: port.postMessage(reply)
-    Worker-->>Content: Promise resolves with reply
+    Content->>Worker: sendMessage()
+    Worker->>Handler: sendNativeMessage()
+    Handler->>Listener: handleExtensionMessage()
+    Listener->>Runtime: evaluateJavaScript()
+    Runtime-->>Listener: postMessage()
+    Listener-->>Handler: Reply block
+    Handler-->>Worker: Native reply
+    Worker-->>Content: Promise resolve
 ```
 
 ### IPC Envelope Format
 
+Messages share a standardised envelope structure:
+
 ```json
 {
-	"correlationId": "e5c2b0d3-1111-4444-8888-abcdef012345",
-	"extensionId": "ext_sample",
-	"type": "RUNTIME_SEND_MESSAGE",
-	"source": {
-		"tabId": 14,
-		"frameId": 0,
-		"url": "https://example.co.uk"
-	},
-	"payload": {
-		"action": "checkRule"
-	}
+  "correlationId": "e5c2b0d3-1111-4444-8888-abcdef012345",
+  "extensionId": "ext_sample",
+  "type": "RUNTIME_SEND_MESSAGE",
+  "source": {
+    "tabId": 14,
+    "frameId": 0,
+    "url": "https://example.co.uk"
+  },
+  "payload": {
+    "action": "checkRule"
+  }
 }
 ```
 
-- **Native Messaging:** `background.js` forwards envelopes via `browser.runtime.sendNativeMessage("application.id", envelope)`.
-- **Process Relay:** `SafariWebExtensionHandler` opens one `NSXPCConnection` per request to Mach service `de.easonwong.SafariExtensionHost.mach`.
-- **Launch Agent:** The host app registers itself as a launch agent through `SMAppService.agent(plistName:)`. The agent plist in `Contents/Library/LaunchAgents/` owns the Mach service, so `launchd` starts the host app with `--background` on the first lookup.
-- **Hand-off:** A user-started host app instance registers the agent, asks it to show settings over XPC, and quits. The agent instance is the only process running the supervisor.
+- Content scripts dispatch envelopes using `browser.runtime.sendMessage(...)`.
+- The Extension Worker relays envelopes to the native handler through `browser.runtime.sendNativeMessage(...)`.
+- The native handler passes requests to the host over `NSXPCConnection`.
+- The host delivers payloads into the target background `WKWebView`.
 
 ---
 
-## 5. Intercepting and Installing Web Extensions
+## 6. Toolbar Actions and Popups
 
-Packages are intercepted and unpacked automatically when downloaded.
+Safari permits only one static toolbar button per extension bundle. Therefore, the host provides a dynamic popup hub (`popup.html`).
 
 ```mermaid
 flowchart LR
-    Intercept["Intercept Link\n(Store / Webpage)"] --> Download["Download Package\n(URLSession)"]
-    Download --> Extract["Unpack Archive\n(Strip CRX3 & Decompress)"]
-    Extract --> Register["Parse Manifest\n& Start Runtime"]
-    Register --> Notify["Notify Safari\n(Extension Ready)"]
+    Icon["Toolbar Icon"] -->|"open"| Hub
+
+    subgraph Hub["Popup Hub<br/>(popup.js)"]
+        direction TB
+        List["loadExtensions()"] --> Type{"actionType"}
+    end
+
+    subgraph Actions["Action Handling"]
+        direction TB
+        View["showPopupView()"]
+        Click["dispatchActionClick()"]
+        Disabled["Disabled Row"]
+    end
+
+    Type -->|"popup"| View
+    Type -->|"click"| Click
+    Type -->|"none"| Disabled
 ```
 
-1. **Click & Store Interception:**
-    - Content script intercepts `<a>` downloads ending in `.crx` or `.xpi`.
-    - Storefront hooks detect "Add to Chrome" buttons on `chromewebstore.google.com` and construct direct CRX3 download links (`clients2.google.com/service/update2/crx`).
-    - `browser.webNavigation.onBeforeNavigate` acts as a fallback for direct address bar navigations.
-2. **Extraction:**
-    - CRX3 packages begin with magic bytes `0x43 0x72 0x32 0x34` (`Cr24`).
-    - The binary unpacker reads the header length, advances to the embedded ZIP payload, and extracts files into the sandboxed application directory.
+The hub inspects the declared action for each installed extension:
+
+- **Popup Action (`actionType: "popup"`):** Embeds the extension popup page inside an `<iframe>` loaded from `ext-ui://<id>/<popupPath>`.
+- **Click Action (`actionType: "click"`):** Forwards a click event envelope to the background runtime, triggers `chrome.action.onClicked`, and closes the popup hub.
+- **Passive Action (`actionType: "none"`):** Displays an inactive entry when no toolbar interaction is declared.
 
 ---
 
-## 6. Forwarding Extension Popups and Toolbar Actions
+## 7. Package Installation and Storage
 
-Safari supports only one static toolbar button declared in `manifest.json`. The host provides a dynamic meta-popup interface (`popup.html`).
+The host downloads, unpacks, and stores web extension packages automatically.
 
 ```mermaid
 flowchart LR
-    ClickToolbar["Click Toolbar Icon"] --> ShowHub["Show Extension List"]
-    ShowHub --> Branch{"Action Type"}
-    Branch -->|"Popup"| ViewPopup["Open in iframe\n(with Back button)"]
-    Branch -->|"Click"| RunAction["Trigger onClicked\n& close popup"]
-    Branch -->|"None"| GreyedOut["Greyed out\n(inactive)"]
+    subgraph Trigger["Bootstrapper<br/>(bootstrapper.js)"]
+        direction TB
+        Link["interceptDownloadClicks()"]
+        Store["hookStorefronts()"]
+    end
+
+    subgraph Package["Package Service<br/>(PackageIngestionService.swift)"]
+        direction TB
+        Download["URLSession.download()"]
+        Extract["extractPackage()"]
+        Parse["parseManifest()"]
+        Download --> Extract
+        Extract --> Parse
+    end
+
+    subgraph Supervisor["Extension Supervisor<br/>(ExtensionSupervisor.swift)"]
+        direction TB
+        Start["startBackgroundRuntime()"]
+    end
+
+    Trigger -->|"sendMessage()"| Package
+    Package --> Supervisor
 ```
 
-### Action Types
-
-1. **Popup Action (`actionType: "popup"`):** Transitions the meta-popup into an embedded view. An `<iframe>` loads `ext-ui://<id>/<popupPath>` with a navigation header to return to the list.
-2. **Click Action (`actionType: "click"`):** Forwards an `ACTION_CLICKED` envelope with current tab details to the background runtime, triggers `chrome.action.onClicked`, and closes the popup immediately.
-3. **Passive Action (`actionType: "none"`):** Extensions without toolbar controls appear with reduced opacity (`0.45`) and disabled click interaction.
+1. **Download Interception:** The content script intercepts links ending in `.crx` or `.xpi`. Furthermore, storefront hooks detect installation buttons on Chrome Web Store pages and generate direct download URLs.
+2. **Package Extraction:** CRX3 packages start with header magic bytes `0x43 0x72 0x32 0x34` (`Cr24`). The unpacker skips the binary header, extracts the embedded ZIP payload, and writes the contents to disk.
+3. **Storage Structure:** Uncompressed packages reside inside the host Application Support container:
+   ```text
+   ~/Library/Application Support/de.easonwong.SafariExtensionHost/Extensions/<extension_id>/
+   ├── manifest.json
+   ├── background.js
+   └── icons/
+   ```
