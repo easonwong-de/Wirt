@@ -79,6 +79,11 @@ public final class HostXPCListener: NSObject, NSXPCListenerDelegate, HostXPCProt
       } else {
         reply(["status": "error", "message": "Invalid URL"])
       }
+    case "OPEN_HOST_APP", "OPEN_SETTINGS":
+      Task { @MainActor in
+        (NSApp.delegate as? AppDelegate)?.showSettings()
+        reply(["status": "success"])
+      }
     default:
       reply(["status": "unknown_message", "type": type])
     }

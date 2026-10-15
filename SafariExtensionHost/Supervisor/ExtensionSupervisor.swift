@@ -33,6 +33,8 @@ public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMe
 
     let shimURL = Bundle.main.url(
       forResource: "chrome-shim", withExtension: "js", subdirectory: "Resources/shim")
+      ?? Bundle.main.url(forResource: "chrome-shim", withExtension: "js", subdirectory: "shim")
+      ?? Bundle.main.url(forResource: "chrome-shim", withExtension: "js")
     if let shimURL = shimURL, let shimCode = try? String(contentsOf: shimURL, encoding: .utf8) {
       let initScript = "window.__HOST_EXTENSION_ID__ = '\(descriptor.id)';\n" + shimCode
       let userScript = WKUserScript(
