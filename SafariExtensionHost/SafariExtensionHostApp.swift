@@ -19,23 +19,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   private var hasInitialisedWindowSize = false
 
+  func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+    return true
+  }
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     if CommandLine.arguments.contains(Self.backgroundArgument) {
       NSApp.setActivationPolicy(.accessory)
       HostXPCListener.shared.start()
-      setupInterface()
-    } else {
-      registerAgent()
+    } else if registerAgent() {
       handOffToAgent()
+    } else {
+      startForeground()
     }
   }
 
+  private func startForeground() {
+    NSApp.setActivationPolicy(.regular)
+    HostXPCListener.shared.start()
+    showSettings()
+  }
+
   private func setupInterface() {
+    guard window == nil else { return }
     setupMainMenu()
     setupWindow()
   }
 
-  private func registerAgent() {
+  @discardableResult
+  private func registerAgent() -> Bool {
+    #if DEBUG
+    let agent = SMAppService.agent(plistName: Self.agentPlistName)
+    if agent.status == .enabled {
+      try? agent.unregister()
+    }
+    return false
+    #else
     let agent = SMAppService.agent(plistName: Self.agentPlistName)
     if agent.status != .enabled {
       do {
@@ -47,6 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     if agent.status == .requiresApproval {
       SMAppService.openSystemSettingsLoginItems()
     }
+    return agent.status == .enabled
+    #endif
   }
 
   private func handOffToAgent() {
@@ -54,18 +75,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     connection.remoteObjectInterface = NSXPCInterface(with: HostXPCProtocol.self)
     connection.resume()
 
-    let agent =
-      connection.remoteObjectProxyWithErrorHandler { error in
+    guard
+      let agent = connection.remoteObjectProxyWithErrorHandler({ [weak self] error in
         os_log(.error, "Launch agent hand-off failed: %@", error.localizedDescription)
         connection.invalidate()
         Task { @MainActor in
-          HostXPCListener.shared.start()
-          self.setupInterface()
-          self.showSettings()
+          self?.startForeground()
         }
-      } as? HostXPCProtocol
+      }) as? HostXPCProtocol
+    else {
+      os_log(.error, "Failed to obtain remote proxy for launch agent")
+      connection.invalidate()
+      startForeground()
+      return
+    }
 
-    agent?.showSettings {
+    agent.showSettings {
       connection.invalidate()
       Task { @MainActor in
         NSApp.terminate(nil)
@@ -87,13 +112,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   @objc func showSettings() {
     NSApp.setActivationPolicy(.regular)
+    setupInterface()
     if let window = self.window {
       if window.isMiniaturized {
         window.deminiaturize(nil)
       }
       window.makeKeyAndOrderFront(nil)
     }
-    NSApp.activate(ignoringOtherApps: true)
+    NSApp.activate()
   }
 
   @objc func quitApp() {
@@ -133,27 +159,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
       defer: false
     )
     window.title = "Safari Extension Host"
-    window.titleVisibility = .hidden
+    window.titleVisibility = .visible
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
     window.isMovableByWindowBackground = true
     window.isReleasedWhenClosed = false
     window.delegate = self
-
-    if let titlebarContainer = window.standardWindowButton(.closeButton)?.superview,
-      let closeButton = window.standardWindowButton(.closeButton)
-    {
-      let titleLabel = NSTextField(labelWithString: "Safari Extension Host")
-      titleLabel.font = NSFont.titleBarFont(ofSize: 13)
-      titleLabel.textColor = .labelColor
-      titleLabel.alignment = .center
-      titleLabel.translatesAutoresizingMaskIntoConstraints = false
-      titlebarContainer.addSubview(titleLabel)
-      NSLayoutConstraint.activate([
-        titleLabel.centerXAnchor.constraint(equalTo: titlebarContainer.centerXAnchor),
-        titleLabel.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor),
-      ])
-    }
 
     let hostingView = NSHostingView(
       rootView: ContentView(onHeightChange: { [weak self] newHeight in

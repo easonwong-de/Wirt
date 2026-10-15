@@ -3,14 +3,16 @@ import Foundation
 public final class PackageIngestionService: Sendable {
   public static let shared = PackageIngestionService()
 
-  public var storageDirectory: URL {
-    let appSupport = FileManager.default.urls(
-      for: .applicationSupportDirectory, in: .userDomainMask
-    ).first!
+  public let storageDirectory: URL
+
+  private init() {
+    let appSupport =
+      FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+      ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
     let hostDir = appSupport.appendingPathComponent(
       "de.easonwong.SafariExtensionHost/Extensions", isDirectory: true)
     try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
-    return hostDir
+    self.storageDirectory = hostDir
   }
 
   public func ingest(from url: URL) async throws -> ExtensionDescriptor {

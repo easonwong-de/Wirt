@@ -1,6 +1,20 @@
 import Foundation
 import WebKit
 
+private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+  private weak var delegate: WKScriptMessageHandler?
+
+  init(delegate: WKScriptMessageHandler) {
+    self.delegate = delegate
+  }
+
+  func userContentController(
+    _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
+  ) {
+    delegate?.userContentController(userContentController, didReceive: message)
+  }
+}
+
 @MainActor
 public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMessageHandler {
   public static let shared = ExtensionSupervisor()
@@ -15,7 +29,7 @@ public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMe
     config.setURLSchemeHandler(self, forURLScheme: "ext-ui")
 
     let userContent = config.userContentController
-    userContent.add(self, name: "hostBridge")
+    userContent.add(WeakScriptMessageHandler(delegate: self), name: "hostBridge")
 
     let shimURL = Bundle.main.url(
       forResource: "chrome-shim", withExtension: "js", subdirectory: "Resources/shim")
@@ -43,11 +57,14 @@ public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMe
 
   public func dispatchActionClick(extensionId: String, tabMetadata: [String: Any]) {
     guard let webView = backgroundWebViews[extensionId] else { return }
-    let jsonData = (try? JSONSerialization.data(withJSONObject: tabMetadata)) ?? Data()
-    let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
-    let js =
-      "if (window.chrome?.action?.onClicked) { for (const fn of window.chrome.action.onClicked.listeners) { fn(\(jsonString)); } }"
-    webView.evaluateJavaScript(js)
+    let script = """
+      if (window.chrome?.action?.onClicked) {
+        for (const fn of window.chrome.action.onClicked.listeners) {
+          fn(tab);
+        }
+      }
+      """
+    webView.callAsyncJavaScript(script, arguments: ["tab": tabMetadata], in: nil, in: .page)
   }
 
   public func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
@@ -57,8 +74,13 @@ public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMe
     }
 
     let baseDir = PackageIngestionService.shared.storageDirectory.appendingPathComponent(
-      extId, isDirectory: true)
-    let filePath = baseDir.appendingPathComponent(url.path)
+      extId, isDirectory: true).standardizedFileURL
+    let filePath = baseDir.appendingPathComponent(url.path).standardizedFileURL
+
+    guard filePath.path.hasPrefix(baseDir.path) else {
+      urlSchemeTask.didFailWithError(URLError(.noPermissionsToReadFile))
+      return
+    }
 
     if let data = try? Data(contentsOf: filePath) {
       let mimeType = mimeForExtension(filePath.pathExtension)
@@ -81,7 +103,6 @@ public final class ExtensionSupervisor: NSObject, WKURLSchemeHandler, WKScriptMe
   public func userContentController(
     _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
   ) {
-    // Handle bridge messages
   }
 
   public func getMatchingScripts(for pageUrl: String) -> [[String: Any]] {

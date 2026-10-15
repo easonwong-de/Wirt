@@ -18,8 +18,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     connection.remoteObjectInterface = NSXPCInterface(with: HostXPCProtocol.self)
     connection.resume()
 
-    let host =
-      connection.remoteObjectProxyWithErrorHandler { error in
+    guard
+      let host = connection.remoteObjectProxyWithErrorHandler({ error in
         os_log(.error, "SafariWebExtensionHandler XPC proxy error: %@", error.localizedDescription)
         connection.invalidate()
         Self.complete(
@@ -28,9 +28,19 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             "error":
               "Safari Extension Host is not set up. Open the Safari Extension Host app once to finish setup."
           ])
-      } as? HostXPCProtocol
+      }) as? HostXPCProtocol
+    else {
+      os_log(.error, "SafariWebExtensionHandler failed to cast XPC proxy")
+      connection.invalidate()
+      Self.complete(
+        context,
+        with: [
+          "error": "Failed to connect to Safari Extension Host."
+        ])
+      return
+    }
 
-    host?.handleExtensionMessage(message) { reply in
+    host.handleExtensionMessage(message) { reply in
       os_log(
         .default, "SafariWebExtensionHandler received native reply: %@", String(describing: reply))
       connection.invalidate()
