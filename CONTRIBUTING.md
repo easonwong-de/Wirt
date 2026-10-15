@@ -32,8 +32,7 @@ Safari-Extension-Host/ ## repository root
 │   ├── SafariWebExtensionHandler.swift ## native messaging handler
 │   ├── Info.plist ## companion extension property list
 │   ├── SafariExtensionHostExtension.entitlements ## companion extension security entitlements
-│   ├── WebExtension/ ## WXT companion extension source
-│   └── Resources/ ## generated companion extension artefacts
+│   └── WebExtension/ ## WXT companion extension source
 └── SafariExtensionHost.xcodeproj/ ## Xcode project configuration
 ```
 

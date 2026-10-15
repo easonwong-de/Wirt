@@ -17,7 +17,6 @@
 		9BFC4B7A307EDCE90098F3AD /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B72307EDCE90098F3AD /* manifest.json */; };
 		9BFC4B7B307EDCE90098F3AD /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B73307EDCE90098F3AD /* popup.css */; };
 		9BFC4B7C307EDCE90098F3AD /* shim in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B74307EDCE90098F3AD /* shim */; };
-		WXT000030000000000000000 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = WXT000020000000000000000 /* Resources */; };
 		SHM000020000000000000000 /* shim in Resources */ = {isa = PBXBuildFile; fileRef = SHM000010000000000000000 /* shim */; };
 		B20001000000000000000000 /* SafariExtensionHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20001000000000000000000 /* SafariExtensionHostApp.swift */; };
 		B20002000000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20002000000000000000000 /* ContentView.swift */; };
@@ -77,7 +76,6 @@
 		9BFC4B72307EDCE90098F3AD /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
 		9BFC4B73307EDCE90098F3AD /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = Resources/popup.css; sourceTree = "<group>"; };
 		9BFC4B74307EDCE90098F3AD /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Resources/shim; sourceTree = "<group>"; };
-		WXT000020000000000000000 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = SafariExtensionHostExtension/Resources; sourceTree = SOURCE_ROOT; };
 		SHM000010000000000000000 /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = SafariExtensionHost/Resources/shim; sourceTree = SOURCE_ROOT; };
 		E20001000000000000000000 /* SafariExtensionHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariExtensionHostApp.swift; sourceTree = "<group>"; };
 		E20002000000000000000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -87,6 +85,10 @@
 		FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCProtocol.swift; sourceTree = "<group>"; };
 		FRE100050000000000000000 /* IPC/HostXPCListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCListener.swift; sourceTree = "<group>"; };
 		FRE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = LaunchAgents/de.easonwong.SafariExtensionHost.agent.plist; sourceTree = "<group>"; };
+		DOC000020000000000000000 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
+		DOC000030000000000000000 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = SOURCE_ROOT; };
+		DOC000040000000000000000 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = SOURCE_ROOT; };
+		WEBEXT000000000000000001 /* WebExtension */ = {isa = PBXFileReference; lastKnownFileType = folder; path = WebExtension; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +110,7 @@
 			children = (
 				9BFC4B42307EDCE80098F3AD /* SafariExtensionHost */,
 				9BFC4B5F307EDCE90098F3AD /* SafariExtensionHostExtension */,
+				DOC000010000000000000000 /* Documentation */,
 				9BFC4B41307EDCE80098F3AD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -143,12 +146,22 @@
 		9BFC4B5F307EDCE90098F3AD /* SafariExtensionHostExtension */ = {
 			isa = PBXGroup;
 			children = (
-				WXT000020000000000000000 /* Resources */,
+				WEBEXT000000000000000001 /* WebExtension */,
 				9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */,
 				ENT00020000000000000000 /* SafariExtensionHostExtension.entitlements */,
 				9BFC4B62307EDCE90098F3AD /* Info.plist */,
 			);
 			path = SafariExtensionHostExtension;
+			sourceTree = "<group>";
+		};
+		DOC000010000000000000000 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				DOC000020000000000000000 /* README.md */,
+				DOC000030000000000000000 /* CONTRIBUTING.md */,
+				DOC000040000000000000000 /* docs */,
+			);
+			name = Documentation;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -242,7 +255,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				WXT000030000000000000000 /* Resources in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
