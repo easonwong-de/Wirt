@@ -17,6 +17,8 @@
 		9BFC4B7A307EDCE90098F3AD /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B72307EDCE90098F3AD /* manifest.json */; };
 		9BFC4B7B307EDCE90098F3AD /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B73307EDCE90098F3AD /* popup.css */; };
 		9BFC4B7C307EDCE90098F3AD /* shim in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B74307EDCE90098F3AD /* shim */; };
+		WXT000030000000000000000 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = WXT000020000000000000000 /* Resources */; };
+		SHM000020000000000000000 /* shim in Resources */ = {isa = PBXBuildFile; fileRef = SHM000010000000000000000 /* shim */; };
 		B20001000000000000000000 /* SafariExtensionHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20001000000000000000000 /* SafariExtensionHostApp.swift */; };
 		B20002000000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20002000000000000000000 /* ContentView.swift */; };
 		BFE100010000000000000000 /* Core/ExtensionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100010000000000000000 /* Core/ExtensionModels.swift */; };
@@ -75,6 +77,8 @@
 		9BFC4B72307EDCE90098F3AD /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
 		9BFC4B73307EDCE90098F3AD /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = Resources/popup.css; sourceTree = "<group>"; };
 		9BFC4B74307EDCE90098F3AD /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Resources/shim; sourceTree = "<group>"; };
+		WXT000020000000000000000 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = SafariExtensionHostExtension/Resources; sourceTree = SOURCE_ROOT; };
+		SHM000010000000000000000 /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = SafariExtensionHost/Resources/shim; sourceTree = SOURCE_ROOT; };
 		E20001000000000000000000 /* SafariExtensionHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariExtensionHostApp.swift; sourceTree = "<group>"; };
 		E20002000000000000000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		FRE100010000000000000000 /* Core/ExtensionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionModels.swift; sourceTree = "<group>"; };
@@ -130,6 +134,7 @@
 				FRE100070000000000000000 /* de.easonwong.SafariExtensionHost.agent.plist */,
 				ENT00010000000000000000 /* SafariExtensionHost.entitlements */,
 				9BFC4B54307EDCE90098F3AD /* Assets.xcassets */,
+				SHM000010000000000000000 /* shim */,
 				9BFC4B56307EDCE90098F3AD /* Info.plist */,
 			);
 			path = SafariExtensionHost;
@@ -138,28 +143,13 @@
 		9BFC4B5F307EDCE90098F3AD /* SafariExtensionHostExtension */ = {
 			isa = PBXGroup;
 			children = (
-				9BFC4B6C307EDCE90098F3AD /* Resources */,
+				WXT000020000000000000000 /* Resources */,
 				9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */,
 				ENT00020000000000000000 /* SafariExtensionHostExtension.entitlements */,
 				9BFC4B62307EDCE90098F3AD /* Info.plist */,
 			);
 			path = SafariExtensionHostExtension;
 			sourceTree = "<group>";
-		};
-		9BFC4B6C307EDCE90098F3AD /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				9BFC4B6D307EDCE90098F3AD /* popup.js */,
-				9BFC4B6E307EDCE90098F3AD /* background.js */,
-				9BFC4B70307EDCE90098F3AD /* popup.html */,
-				9BFC4B71307EDCE90098F3AD /* bootstrapper.js */,
-				9BFC4B72307EDCE90098F3AD /* manifest.json */,
-				9BFC4B73307EDCE90098F3AD /* popup.css */,
-				9BFC4B74307EDCE90098F3AD /* shim */,
-			);
-			name = Resources;
-			path = SafariExtensionHostExtension;
-			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -188,6 +178,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9BFC4B65307EDCE90098F3AD /* Build configuration list for PBXNativeTarget "SafariExtensionHostExtension" */;
 			buildPhases = (
+				WXT000010000000000000000 /* Build Web Extension with Bun & WXT */,
 				9BFC4B57307EDCE90098F3AD /* Sources */,
 				9BFC4B58307EDCE90098F3AD /* Frameworks */,
 				9BFC4B59307EDCE90098F3AD /* Resources */,
@@ -240,23 +231,44 @@
 /* Begin PBXResourcesBuildPhase section */
 		9BFC4B3E307EDCE80098F3AD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
 			files = (
 				9BFC4B55307EDCE90098F3AD /* Assets.xcassets in Resources */,
+				SHM000020000000000000000 /* shim in Resources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		9BFC4B59307EDCE90098F3AD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
 			files = (
-				9BFC4B7B307EDCE90098F3AD /* popup.css in Resources */,
-				9BFC4B78307EDCE90098F3AD /* popup.html in Resources */,
-				9BFC4B76307EDCE90098F3AD /* background.js in Resources */,
-				9BFC4B75307EDCE90098F3AD /* popup.js in Resources */,
-				9BFC4B7C307EDCE90098F3AD /* shim in Resources */,
-				9BFC4B7A307EDCE90098F3AD /* manifest.json in Resources */,
-				9BFC4B79307EDCE90098F3AD /* bootstrapper.js in Resources */,
+				WXT000030000000000000000 /* Resources in Resources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		WXT000010000000000000000 /* Build Web Extension with Bun & WXT */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Web Extension with Bun & WXT";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT/SafariExtensionHostExtension/WebExtension\"\nbun install\nbun run build\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		9BFC4B3C307EDCE80098F3AD /* Sources */ = {
@@ -420,6 +432,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SafariExtensionHostExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SafariExtensionHostExtension;
@@ -455,6 +468,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SafariExtensionHostExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SafariExtensionHostExtension;
