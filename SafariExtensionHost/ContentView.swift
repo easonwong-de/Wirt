@@ -112,7 +112,7 @@ struct ContentView: View {
       VStack(spacing: 10) {
         Image(systemName: "puzzlepiece.extension")
           .font(.system(size: 40))
-          .foregroundColor(.secondary)
+          .foregroundStyle(.secondary)
 
         HStack(spacing: 6) {
           Circle()
@@ -149,11 +149,11 @@ struct ContentView: View {
           text: "Select \"Always Allow on Every Website…\".")
       }
       .font(.system(size: 11))
-      .foregroundColor(.secondary)
+      .foregroundStyle(.secondary)
       .padding(.vertical, 10)
       .padding(.horizontal, 16)
       .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
-      .cornerRadius(8)
+      .clipShape(RoundedRectangle(cornerRadius: 8))
 
       Button("Open Safari Settings") {
         state.openSafariExtensionSettings()
@@ -201,13 +201,13 @@ struct ContentView: View {
               .font(.system(size: 13, weight: .semibold))
             Text("Download a .crx or .xpi package in Safari to install.")
               .font(.system(size: 11))
-              .foregroundColor(.secondary)
+              .foregroundStyle(.secondary)
           }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 200)
         .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-        .cornerRadius(8)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
           RoundedRectangle(cornerRadius: 8)
             .stroke(Color(NSColor.separatorColor).opacity(0.7), lineWidth: 1)
@@ -219,14 +219,14 @@ struct ContentView: View {
               HStack(spacing: 12) {
                 Image(systemName: "puzzlepiece.extension.fill")
                   .font(.system(size: 18))
-                  .foregroundColor(.accentColor)
+                  .foregroundStyle(Color.accentColor)
 
                 VStack(alignment: .leading, spacing: 2) {
                   Text(ext.name)
                     .font(.system(size: 13, weight: .medium))
                   Text("v\(ext.version)")
                     .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -243,7 +243,7 @@ struct ContentView: View {
         }
         .frame(height: 200)
         .background(Color(NSColor.controlBackgroundColor).opacity(0.4))
-        .cornerRadius(8)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
           RoundedRectangle(cornerRadius: 8)
             .stroke(Color(NSColor.separatorColor).opacity(0.7), lineWidth: 1)
