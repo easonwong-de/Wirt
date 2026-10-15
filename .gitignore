@@ -111,3 +111,11 @@ xcuserdata/
 **/xcshareddata/WorkspaceSettings.xcsettings
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux,windows,visualstudiocode,xcode
+
+### WXT & Web Extension Outputs ###
+SafariExtensionHostExtension/WebExtension/node_modules/
+SafariExtensionHostExtension/WebExtension/.output/
+SafariExtensionHostExtension/WebExtension/.wxt/
+SafariExtensionHostExtension/Resources/
+!SafariExtensionHostExtension/WebExtension/public/icon/
+

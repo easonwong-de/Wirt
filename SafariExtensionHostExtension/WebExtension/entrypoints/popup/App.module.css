@@ -1,0 +1,231 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	background: transparent;
+	width: 320px;
+	min-height: 0;
+	color: light-dark(#1d1d1f, #f5f5f7);
+	font-size: 13px;
+	font-family:
+		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+		sans-serif;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 14px;
+}
+
+.headerTitle {
+	flex: 1;
+	overflow: hidden;
+	color: light-dark(#1d1d1f, #f5f5f7);
+	font-weight: 600;
+	font-size: 13px;
+	line-height: 1;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.headerActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.divider {
+	margin: 0;
+	border: none;
+	background-color: light-dark(
+		rgba(0, 0, 0, 0.12),
+		rgba(255, 255, 255, 0.15)
+	);
+	height: 1px;
+}
+
+.iconButton {
+	display: inline-flex;
+	flex-shrink: 0;
+	justify-content: center;
+	align-items: center;
+	opacity: 0.7;
+	transition: opacity 0.15s ease;
+	cursor: pointer;
+	margin: 0;
+	border: none;
+	background: transparent !important;
+	padding: 2px;
+	color: light-dark(#1d1d1f, #f5f5f7);
+}
+
+.iconButton:hover {
+	opacity: 1;
+	background: transparent !important;
+}
+
+.iconButton:active {
+	opacity: 0.4;
+}
+
+.statusIndicator {
+	display: inline-block;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background-color: #ff3b30;
+	width: 7px;
+	height: 7px;
+}
+
+.disconnectedContainer {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 12px;
+	padding: 24px 20px;
+	text-align: center;
+}
+
+.disconnectedIcon {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: light-dark(rgba(0, 0, 0, 0.65), rgba(255, 255, 255, 0.7));
+}
+
+.disconnectedStatusRow {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 6px;
+}
+
+.disconnectedStatusText {
+	color: light-dark(#1d1d1f, #f5f5f7);
+	font-weight: 700;
+	font-size: 13px;
+}
+
+.disconnectedInstruction {
+	color: light-dark(rgba(0, 0, 0, 0.65), rgba(255, 255, 255, 0.7));
+	font-size: 11px;
+	line-height: 1.35;
+}
+
+.extensionList {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px;
+	max-height: 420px;
+	overflow-y: auto;
+}
+
+.extensionItemInteractive {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	transition:
+		background-color 0.15s ease,
+		color 0.15s ease;
+	cursor: pointer;
+	border-radius: 6px;
+	padding: 8px 10px;
+	color: light-dark(#1d1d1f, #f5f5f7);
+}
+
+.extensionItemInteractive:hover {
+	background-color: AccentColor;
+	color: #ffffff;
+}
+
+.extensionItemDisabled {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	opacity: 0.45;
+	cursor: default;
+	border-radius: 6px;
+	padding: 8px 10px;
+	color: light-dark(#1d1d1f, #f5f5f7);
+}
+
+.extensionIcon {
+	display: inline-flex;
+	flex-shrink: 0;
+	justify-content: center;
+	align-items: center;
+	width: 18px;
+	height: 18px;
+}
+
+.extensionName {
+	flex: 1;
+	overflow: hidden;
+	font-weight: 500;
+	font-size: 13px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.badge {
+	margin-left: 6px;
+	border-radius: 10px;
+	background-color: AccentColor;
+	padding: 2px 6px;
+	color: #ffffff;
+	font-weight: 600;
+	font-size: 10px;
+}
+
+.emptyContainer {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 10px;
+	padding: 28px 20px;
+	text-align: center;
+}
+
+.emptyIcon {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: light-dark(rgba(0, 0, 0, 0.65), rgba(255, 255, 255, 0.7));
+}
+
+.emptyTitle {
+	color: light-dark(#1d1d1f, #f5f5f7);
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.emptySubtitle {
+	color: light-dark(rgba(0, 0, 0, 0.65), rgba(255, 255, 255, 0.7));
+	font-size: 11px;
+	line-height: 1.35;
+}
+
+.popupHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+}
+
+.frameContainer {
+	width: 100%;
+	height: 480px;
+}
+
+.popupFrame {
+	border: none;
+	width: 100%;
+	height: 100%;
+}
