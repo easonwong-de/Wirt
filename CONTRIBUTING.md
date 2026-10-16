@@ -15,7 +15,6 @@ Ensure the following tools are installed:
 
 ```mermaid
 treeView-beta
-Wirt/ ## repository root
 ├── Wirt/ ## macOS host application
 │   ├── Assets.xcassets/ ## application asset catalogue
 │   ├── Core/ ## data models and persistent storage
