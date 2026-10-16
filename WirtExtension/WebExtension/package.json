@@ -1,6 +1,6 @@
 {
-	"name": "safari-extension-host-web",
-	"description": "Web extension components for Safari Extension Host",
+	"name": "wirt-web",
+	"description": "Web extension components for Wirt",
 	"private": true,
 	"version": "1.0.0",
 	"type": "module",

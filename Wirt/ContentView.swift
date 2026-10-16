@@ -25,7 +25,7 @@ final class AppState: ObservableObject {
   @Published var isExtensionEnabled = false
   @Published var installedExtensions: [InstalledExtensionItem] = []
 
-  private let extensionBundleId = "de.easonwong.SafariExtensionHost.Extension"
+  private let extensionBundleId = "de.easonwong.Wirt.Extension"
 
   init() {
     loadInstalledExtensions()
@@ -143,7 +143,7 @@ struct ContentView: View {
           text: "In Safari Develop menu, select \"Allow Unsigned Extensions\".")
         instructionLine(
           number: "3.",
-          text: "In Safari Settings > Extensions, tick \"Safari Extension Host\".")
+          text: "In Safari Settings > Extensions, tick \"Wirt\".")
         instructionLine(
           number: "4.",
           text: "Select \"Always Allow on Every Website…\".")

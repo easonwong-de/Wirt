@@ -10,7 +10,7 @@ public final class PackageIngestionService: Sendable {
       FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
       ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
     let hostDir = appSupport.appendingPathComponent(
-      "de.easonwong.SafariExtensionHost/Extensions", isDirectory: true)
+      "de.easonwong.Wirt/Extensions", isDirectory: true)
     try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
     self.storageDirectory = hostDir
   }

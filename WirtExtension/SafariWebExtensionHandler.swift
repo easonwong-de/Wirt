@@ -26,7 +26,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
           context,
           with: [
             "error":
-              "Safari Extension Host is not set up. Open the Safari Extension Host app once to finish setup."
+              "Wirt is not set up. Open the Wirt app once to finish setup."
           ])
       }) as? HostXPCProtocol
     else {
@@ -35,7 +35,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
       Self.complete(
         context,
         with: [
-          "error": "Failed to connect to Safari Extension Host."
+          "error": "Failed to connect to Wirt."
         ])
       return
     }

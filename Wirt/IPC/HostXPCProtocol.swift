@@ -1,7 +1,7 @@
 import Foundation
 
 public enum HostXPC {
-  public nonisolated static let serviceName = "de.easonwong.SafariExtensionHost.mach"
+  public nonisolated static let serviceName = "de.easonwong.Wirt.mach"
 }
 
 @objc(HostXPCProtocol)

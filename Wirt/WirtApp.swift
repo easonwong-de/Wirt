@@ -5,7 +5,7 @@ import os.log
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-  private static let agentPlistName = "de.easonwong.SafariExtensionHost.agent.plist"
+  private static let agentPlistName = "de.easonwong.Wirt.agent.plist"
   private static let backgroundArgument = "--background"
 
   private var window: NSWindow?
@@ -158,7 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
       backing: .buffered,
       defer: false
     )
-    window.title = "Safari Extension Host"
+    window.title = "Wirt"
     window.titleVisibility = .visible
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
@@ -190,7 +190,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let appMenu = NSMenu()
     appMenu.addItem(
       NSMenuItem(
-        title: "About Safari Extension Host",
+        title: "About Wirt",
         action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
         keyEquivalent: ""))
     appMenu.addItem(NSMenuItem.separator())
@@ -203,7 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     appMenu.addItem(NSMenuItem.separator())
     appMenu.addItem(
       NSMenuItem(
-        title: "Hide Safari Extension Host",
+        title: "Hide Wirt",
         action: #selector(NSApplication.hide(_:)),
         keyEquivalent: "h"))
     let hideOthersItem = NSMenuItem(
@@ -219,7 +219,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyEquivalent: ""))
     appMenu.addItem(NSMenuItem.separator())
     let quitItem = NSMenuItem(
-      title: "Quit Safari Extension Host",
+      title: "Quit Wirt",
       action: #selector(quitApp),
       keyEquivalent: "q")
     quitItem.target = self

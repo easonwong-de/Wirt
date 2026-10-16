@@ -1,14 +1,14 @@
-# System Architecture: Safari Extension Host
+# System Architecture: Wirt
 
 ## 1. System Overview
 
-The Safari Extension Host runs unmodified Chrome and Firefox extensions in Safari.
+Wirt runs unmodified Chrome and Firefox extensions in Safari.
 
 Safari Web Extensions enforce a strict Content Security Policy (`script-src 'self'`). Therefore, dynamic remote script execution is prohibited inside the extension worker. To resolve this restriction, the host runs background scripts inside headless WebViews within a companion macOS application. Content scripts and extension popups remain inside Safari and bridge into the host application.
 
 ```mermaid
 flowchart LR
-    subgraph Safari["Safari Web Extension<br/>(SafariExtensionHostExtension.appex)"]
+    subgraph Safari["Safari Web Extension<br/>(WirtExtension.appex)"]
         direction TB
         Boot["Bootstrapper<br/>(bootstrapper.js)"]
         Worker["Extension Worker<br/>(background.js)"]
@@ -20,7 +20,7 @@ flowchart LR
     subgraph MacOS["macOS"]
         direction TB
         Launchd["launchd"]
-        subgraph Host["Host App<br/>(SafariExtensionHost.app)"]
+        subgraph Host["Host App<br/>(Wirt.app)"]
             direction TB
             Listener["XPC Listener<br/>(HostXPCListener.swift)"]
             Supervisor["Extension Supervisor<br/>(ExtensionSupervisor.swift)"]
@@ -37,8 +37,8 @@ flowchart LR
 ```
 
 The system contains two bundle targets:
-1. **Safari Extension Companion (`SafariExtensionHostExtension.appex`):** Runs inside Safari to intercept web requests, manage browser tabs, and forward native messages.
-2. **Host Application (`SafariExtensionHost.app`):** Runs on macOS to manage extension lifecycles, execute background scripts, and persist files.
+1. **Safari Extension Companion (`WirtExtension.appex`):** Runs inside Safari to intercept web requests, manage browser tabs, and forward native messages.
+2. **Host Application (`Wirt.app`):** Runs on macOS to manage extension lifecycles, execute background scripts, and persist files.
 
 ---
 
@@ -67,9 +67,9 @@ sequenceDiagram
     Agent->>Agent: windowShouldClose()
 ```
 
-1. **Launch Agent Registration:** On initial startup, the host registers `de.easonwong.SafariExtensionHost.agent.plist` through `SMAppService.agent(plistName:)`. The plist assigns ownership of the Mach service `de.easonwong.SafariExtensionHost.mach` to `launchd`.
-2. **On-Demand Activation:** When Safari sends a request, `SafariWebExtensionHandler` resolves the Mach service. If the host is not running, `launchd` starts `SafariExtensionHost` with `--background`.
-3. **Single-Instance Hand-off:** When a user launches `SafariExtensionHost.app` directly, the new instance registers the agent and sends an XPC `showSettings()` call to the active Mach service. The launcher then terminates itself immediately.
+1. **Launch Agent Registration:** On initial startup, the host registers `de.easonwong.Wirt.agent.plist` through `SMAppService.agent(plistName:)`. The plist assigns ownership of the Mach service `de.easonwong.Wirt.mach` to `launchd`.
+2. **On-Demand Activation:** When Safari sends a request, `SafariWebExtensionHandler` resolves the Mach service. If the host is not running, `launchd` starts `Wirt` with `--background`.
+3. **Single-Instance Hand-off:** When a user launches `Wirt.app` directly, the new instance registers the agent and sends an XPC `showSettings()` call to the active Mach service. The launcher then terminates itself immediately.
 4. **Headless Background Execution:** When the user closes the settings window, the application hides the window and sets its policy to `.accessory`. The process remains active silently to retain in-memory background runtimes.
 5. **Transient XPC Connections:** `SafariWebExtensionHandler` creates and invalidates an `NSXPCConnection` for each incoming request. This prevents stale sockets across extension reloads.
 
@@ -273,7 +273,7 @@ flowchart LR
 2. **Package Extraction:** CRX3 packages start with header magic bytes `0x43 0x72 0x32 0x34` (`Cr24`). The unpacker skips the binary header, extracts the embedded ZIP payload, and writes the contents to disk.
 3. **Storage Structure:** Uncompressed packages reside inside the host Application Support container:
    ```text
-   ~/Library/Application Support/de.easonwong.SafariExtensionHost/Extensions/<extension_id>/
+   ~/Library/Application Support/de.easonwong.Wirt/Extensions/<extension_id>/
    ├── manifest.json
    ├── background.js
    └── icons/

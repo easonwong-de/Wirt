@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "9BFC4B3F307EDCE80098F3AD"
-               BuildableName = "SafariExtensionHost.app"
-               BlueprintName = "SafariExtensionHost"
-               ReferencedContainer = "container:SafariExtensionHost.xcodeproj">
+               BuildableName = "Wirt.app"
+               BlueprintName = "Wirt"
+               ReferencedContainer = "container:Wirt.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9BFC4B3F307EDCE80098F3AD"
-            BuildableName = "SafariExtensionHost.app"
-            BlueprintName = "SafariExtensionHost"
-            ReferencedContainer = "container:SafariExtensionHost.xcodeproj">
+            BuildableName = "Wirt.app"
+            BlueprintName = "Wirt"
+            ReferencedContainer = "container:Wirt.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9BFC4B3F307EDCE80098F3AD"
-            BuildableName = "SafariExtensionHost.app"
-            BlueprintName = "SafariExtensionHost"
-            ReferencedContainer = "container:SafariExtensionHost.xcodeproj">
+            BuildableName = "Wirt.app"
+            BlueprintName = "Wirt"
+            ReferencedContainer = "container:Wirt.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

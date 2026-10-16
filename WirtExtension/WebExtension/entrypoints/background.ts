@@ -9,7 +9,7 @@ import type {
 	RuntimeMessage,
 } from "@/types/extension";
 
-const LOG_TAG = "[SafariExtensionHost:Background]";
+const LOG_TAG = "[Wirt:Background]";
 
 function logInfo(
 	...args: readonly (string | number | boolean | null | undefined | object)[]

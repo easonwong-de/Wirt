@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
 	<array>
-		<string>de.easonwong.SafariExtensionHost.mach</string>
+		<string>de.easonwong.Wirt.mach</string>
 	</array>
 </dict>
 </plist>

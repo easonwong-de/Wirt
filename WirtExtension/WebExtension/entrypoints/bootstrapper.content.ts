@@ -38,7 +38,7 @@ interface ScopedShim {
 	};
 }
 
-const LOG_TAG = "[SafariExtensionHost:Content]";
+const LOG_TAG = "[Wirt:Content]";
 
 function logInfo(
 	...args: readonly (string | number | boolean | null | undefined | object)[]

@@ -3,22 +3,22 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>de.easonwong.SafariExtensionHost.agent</string>
+	<string>de.easonwong.Wirt.agent</string>
 	<key>BundleProgram</key>
-	<string>Contents/MacOS/SafariExtensionHost</string>
+	<string>Contents/MacOS/Wirt</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>SafariExtensionHost</string>
+		<string>Wirt</string>
 		<string>--background</string>
 	</array>
 	<key>MachServices</key>
 	<dict>
-		<key>de.easonwong.SafariExtensionHost.mach</key>
+		<key>de.easonwong.Wirt.mach</key>
 		<true/>
 	</dict>
 	<key>AssociatedBundleIdentifiers</key>
 	<array>
-		<string>de.easonwong.SafariExtensionHost</string>
+		<string>de.easonwong.Wirt</string>
 	</array>
 	<key>ProcessType</key>
 	<string>Interactive</string>

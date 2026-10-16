@@ -1,0 +1,643 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9BFC4B55307EDCE90098F3AD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B54307EDCE90098F3AD /* Assets.xcassets */; };
+		9BFC4B5C307EDCE90098F3AD /* WirtExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		9BFC4B61307EDCE90098F3AD /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */; };
+		9BFC4B75307EDCE90098F3AD /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B6D307EDCE90098F3AD /* popup.js */; };
+		9BFC4B76307EDCE90098F3AD /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B6E307EDCE90098F3AD /* background.js */; };
+		9BFC4B78307EDCE90098F3AD /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B70307EDCE90098F3AD /* popup.html */; };
+		9BFC4B79307EDCE90098F3AD /* bootstrapper.js in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B71307EDCE90098F3AD /* bootstrapper.js */; };
+		9BFC4B7A307EDCE90098F3AD /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B72307EDCE90098F3AD /* manifest.json */; };
+		9BFC4B7B307EDCE90098F3AD /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B73307EDCE90098F3AD /* popup.css */; };
+		9BFC4B7C307EDCE90098F3AD /* shim in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B74307EDCE90098F3AD /* shim */; };
+		SHM000020000000000000000 /* shim in Resources */ = {isa = PBXBuildFile; fileRef = SHM000010000000000000000 /* shim */; };
+		B20001000000000000000000 /* WirtApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20001000000000000000000 /* WirtApp.swift */; };
+		B20002000000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20002000000000000000000 /* ContentView.swift */; };
+		BFE100010000000000000000 /* Core/ExtensionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100010000000000000000 /* Core/ExtensionModels.swift */; };
+		BFE100020000000000000000 /* Ingestion/PackageIngestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100020000000000000000 /* Ingestion/PackageIngestionService.swift */; };
+		BFE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */; };
+		BFE100040000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */; };
+		BFE100050000000000000000 /* IPC/HostXPCListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* IPC/HostXPCListener.swift */; };
+		BFE100060000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */; };
+		BFE100070000000000000000 /* de.easonwong.Wirt.agent.plist in Embed Launch Agents */ = {isa = PBXBuildFile; fileRef = FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9BFC4B5D307EDCE90098F3AD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9BFC4B38307EDCE80098F3AD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9BFC4B5A307EDCE90098F3AD;
+			remoteInfo = WirtExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9BFC4B68307EDCE90098F3AD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				9BFC4B5C307EDCE90098F3AD /* WirtExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+		CPF100010000000000000000 /* Embed Launch Agents */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = Contents/Library/LaunchAgents;
+			dstSubfolder = Wrapper;
+			files = (
+				BFE100070000000000000000 /* de.easonwong.Wirt.agent.plist in Embed Launch Agents */,
+			);
+			name = "Embed Launch Agents";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		9BFC4B40307EDCE80098F3AD /* Wirt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wirt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9BFC4B54307EDCE90098F3AD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ENT00010000000000000000 /* Wirt.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Wirt.entitlements; sourceTree = "<group>"; };
+		ENT00020000000000000000 /* WirtExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WirtExtension.entitlements; sourceTree = "<group>"; };
+		9BFC4B56307EDCE90098F3AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WirtExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		9BFC4B62307EDCE90098F3AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9BFC4B6D307EDCE90098F3AD /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = Resources/popup.js; sourceTree = "<group>"; };
+		9BFC4B6E307EDCE90098F3AD /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
+		9BFC4B70307EDCE90098F3AD /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = Resources/popup.html; sourceTree = "<group>"; };
+		9BFC4B71307EDCE90098F3AD /* bootstrapper.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = bootstrapper.js; path = Resources/bootstrapper.js; sourceTree = "<group>"; };
+		9BFC4B72307EDCE90098F3AD /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
+		9BFC4B73307EDCE90098F3AD /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = Resources/popup.css; sourceTree = "<group>"; };
+		9BFC4B74307EDCE90098F3AD /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Resources/shim; sourceTree = "<group>"; };
+		SHM000010000000000000000 /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Wirt/Resources/shim; sourceTree = SOURCE_ROOT; };
+		E20001000000000000000000 /* WirtApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WirtApp.swift; sourceTree = "<group>"; };
+		E20002000000000000000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		FRE100010000000000000000 /* Core/ExtensionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionModels.swift; sourceTree = "<group>"; };
+		FRE100020000000000000000 /* Ingestion/PackageIngestionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ingestion/PackageIngestionService.swift; sourceTree = "<group>"; };
+		FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supervisor/ExtensionSupervisor.swift; sourceTree = "<group>"; };
+		FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCProtocol.swift; sourceTree = "<group>"; };
+		FRE100050000000000000000 /* IPC/HostXPCListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCListener.swift; sourceTree = "<group>"; };
+		FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = LaunchAgents/de.easonwong.Wirt.agent.plist; sourceTree = "<group>"; };
+		DOC000020000000000000000 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
+		DOC000030000000000000000 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = SOURCE_ROOT; };
+		DOC000040000000000000000 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = SOURCE_ROOT; };
+		WEBEXT000000000000000001 /* WebExtension */ = {isa = PBXFileReference; lastKnownFileType = folder; path = WebExtension; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9BFC4B3D307EDCE80098F3AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		9BFC4B58307EDCE90098F3AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9BFC4B37307EDCE80098F3AD = {
+			isa = PBXGroup;
+			children = (
+				9BFC4B42307EDCE80098F3AD /* Wirt */,
+				9BFC4B5F307EDCE90098F3AD /* WirtExtension */,
+				DOC000010000000000000000 /* Documentation */,
+				9BFC4B41307EDCE80098F3AD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9BFC4B41307EDCE80098F3AD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9BFC4B40307EDCE80098F3AD /* Wirt.app */,
+				9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9BFC4B42307EDCE80098F3AD /* Wirt */ = {
+			isa = PBXGroup;
+			children = (
+				E20001000000000000000000 /* WirtApp.swift */,
+				E20002000000000000000000 /* ContentView.swift */,
+				FRE100010000000000000000 /* Core/ExtensionModels.swift */,
+				FRE100020000000000000000 /* Ingestion/PackageIngestionService.swift */,
+				FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */,
+				FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */,
+				FRE100050000000000000000 /* IPC/HostXPCListener.swift */,
+				FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */,
+				ENT00010000000000000000 /* Wirt.entitlements */,
+				9BFC4B54307EDCE90098F3AD /* Assets.xcassets */,
+				SHM000010000000000000000 /* shim */,
+				9BFC4B56307EDCE90098F3AD /* Info.plist */,
+			);
+			path = Wirt;
+			sourceTree = "<group>";
+		};
+		9BFC4B5F307EDCE90098F3AD /* WirtExtension */ = {
+			isa = PBXGroup;
+			children = (
+				WEBEXT000000000000000001 /* WebExtension */,
+				9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */,
+				ENT00020000000000000000 /* WirtExtension.entitlements */,
+				9BFC4B62307EDCE90098F3AD /* Info.plist */,
+			);
+			path = WirtExtension;
+			sourceTree = "<group>";
+		};
+		DOC000010000000000000000 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				DOC000020000000000000000 /* README.md */,
+				DOC000030000000000000000 /* CONTRIBUTING.md */,
+				DOC000040000000000000000 /* docs */,
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9BFC4B3F307EDCE80098F3AD /* Wirt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9BFC4B69307EDCE90098F3AD /* Build configuration list for PBXNativeTarget "Wirt" */;
+			buildPhases = (
+				9BFC4B3C307EDCE80098F3AD /* Sources */,
+				9BFC4B3D307EDCE80098F3AD /* Frameworks */,
+				9BFC4B3E307EDCE80098F3AD /* Resources */,
+				9BFC4B68307EDCE90098F3AD /* Embed Foundation Extensions */,
+				CPF100010000000000000000 /* Embed Launch Agents */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9BFC4B5E307EDCE90098F3AD /* PBXTargetDependency */,
+			);
+			name = Wirt;
+			productName = Wirt;
+			productReference = 9BFC4B40307EDCE80098F3AD /* Wirt.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9BFC4B5A307EDCE90098F3AD /* WirtExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9BFC4B65307EDCE90098F3AD /* Build configuration list for PBXNativeTarget "WirtExtension" */;
+			buildPhases = (
+				WXT000010000000000000000 /* Build Web Extension with Bun & WXT */,
+				9BFC4B57307EDCE90098F3AD /* Sources */,
+				9BFC4B58307EDCE90098F3AD /* Frameworks */,
+				9BFC4B59307EDCE90098F3AD /* Resources */,
+			);
+			buildRules = (
+			);
+			name = WirtExtension;
+			productName = WirtExtension;
+			productReference = 9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9BFC4B38307EDCE80098F3AD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					9BFC4B3F307EDCE80098F3AD = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					9BFC4B5A307EDCE90098F3AD = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 9BFC4B3B307EDCE80098F3AD /* Build configuration list for PBXProject "Wirt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 9BFC4B37307EDCE80098F3AD;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9BFC4B41307EDCE80098F3AD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9BFC4B3F307EDCE80098F3AD /* Wirt */,
+				9BFC4B5A307EDCE90098F3AD /* WirtExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9BFC4B3E307EDCE80098F3AD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9BFC4B55307EDCE90098F3AD /* Assets.xcassets in Resources */,
+				SHM000020000000000000000 /* shim in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9BFC4B59307EDCE90098F3AD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		WXT000010000000000000000 /* Build Web Extension with Bun & WXT */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Web Extension with Bun & WXT";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT/WirtExtension/WebExtension\"\nbun install\nbun run build\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9BFC4B3C307EDCE80098F3AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				B20001000000000000000000 /* WirtApp.swift in Sources */,
+				B20002000000000000000000 /* ContentView.swift in Sources */,
+				BFE100010000000000000000 /* Core/ExtensionModels.swift in Sources */,
+				BFE100020000000000000000 /* Ingestion/PackageIngestionService.swift in Sources */,
+				BFE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift in Sources */,
+				BFE100040000000000000000 /* IPC/HostXPCProtocol.swift in Sources */,
+				BFE100050000000000000000 /* IPC/HostXPCListener.swift in Sources */,
+			);
+		};
+		9BFC4B57307EDCE90098F3AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BFE100060000000000000000 /* IPC/HostXPCProtocol.swift in Sources */,
+				9BFC4B61307EDCE90098F3AD /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9BFC4B5E307EDCE90098F3AD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9BFC4B5A307EDCE90098F3AD /* WirtExtension */;
+			targetProxy = 9BFC4B5D307EDCE90098F3AD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		9BFC4B63307EDCE90098F3AD /* Debug configuration for PBXProject "Wirt" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		9BFC4B64307EDCE90098F3AD /* Release configuration for PBXProject "Wirt" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		9BFC4B66307EDCE90098F3AD /* Debug configuration for PBXNativeTarget "WirtExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WirtExtension/WirtExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WirtExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WirtExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = de.easonwong.Wirt.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9BFC4B67307EDCE90098F3AD /* Release configuration for PBXNativeTarget "WirtExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WirtExtension/WirtExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WirtExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WirtExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = de.easonwong.Wirt.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		9BFC4B6A307EDCE90098F3AD /* Debug configuration for PBXNativeTarget "Wirt" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Wirt/Wirt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Wirt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Wirt";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_NSViewGestureRecognizerIsExclusive = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = de.easonwong.Wirt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9BFC4B6B307EDCE90098F3AD /* Release configuration for PBXNativeTarget "Wirt" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Wirt/Wirt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Wirt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Wirt";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_NSViewGestureRecognizerIsExclusive = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = de.easonwong.Wirt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9BFC4B3B307EDCE80098F3AD /* Build configuration list for PBXProject "Wirt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9BFC4B63307EDCE90098F3AD /* Debug configuration for PBXProject "Wirt" */,
+				9BFC4B64307EDCE90098F3AD /* Release configuration for PBXProject "Wirt" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		9BFC4B65307EDCE90098F3AD /* Build configuration list for PBXNativeTarget "WirtExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9BFC4B66307EDCE90098F3AD /* Debug configuration for PBXNativeTarget "WirtExtension" */,
+				9BFC4B67307EDCE90098F3AD /* Release configuration for PBXNativeTarget "WirtExtension" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		9BFC4B69307EDCE90098F3AD /* Build configuration list for PBXNativeTarget "Wirt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9BFC4B6A307EDCE90098F3AD /* Debug configuration for PBXNativeTarget "Wirt" */,
+				9BFC4B6B307EDCE90098F3AD /* Release configuration for PBXNativeTarget "Wirt" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 9BFC4B38307EDCE80098F3AD /* Project object */;
+	validationLevel = 1;
+}

@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in contributing to Safari Extension Host.
+Thank you for your interest in contributing to Wirt.
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ Ensure the following tools are installed:
 
 ```mermaid
 treeView-beta
-Safari-Extension-Host/ ## repository root
-├── SafariExtensionHost/ ## macOS host application
+Wirt/ ## repository root
+├── Wirt/ ## macOS host application
 │   ├── Assets.xcassets/ ## application asset catalogue
 │   ├── Core/ ## data models and persistent storage
 │   ├── Ingestion/ ## package extraction and manifest parser
@@ -26,14 +26,14 @@ Safari-Extension-Host/ ## repository root
 │   ├── Supervisor/ ## extension runtime supervisor and webviews
 │   ├── ContentView.swift ## host application SwiftUI view
 │   ├── Info.plist ## host application property list
-│   ├── SafariExtensionHost.entitlements ## host application security entitlements
-│   └── SafariExtensionHostApp.swift ## host application entry point
-├── SafariExtensionHostExtension/ ## Safari extension companion target
+│   ├── Wirt.entitlements ## host application security entitlements
+│   └── WirtApp.swift ## host application entry point
+├── WirtExtension/ ## Safari extension companion target
 │   ├── SafariWebExtensionHandler.swift ## native messaging handler
 │   ├── Info.plist ## companion extension property list
-│   ├── SafariExtensionHostExtension.entitlements ## companion extension security entitlements
+│   ├── WirtExtension.entitlements ## companion extension security entitlements
 │   └── WebExtension/ ## WXT companion extension source
-└── SafariExtensionHost.xcodeproj/ ## Xcode project configuration
+└── Wirt.xcodeproj/ ## Xcode project configuration
 ```
 
 ## Build Instructions
@@ -42,8 +42,8 @@ Safari-Extension-Host/ ## repository root
 
 Xcode triggers Bun and WXT automatically before bundling the companion extension:
 
-1. Open `SafariExtensionHost.xcodeproj` in Xcode.
-2. Select the `SafariExtensionHost` scheme.
+1. Open `Wirt.xcodeproj` in Xcode.
+2. Select the `Wirt` scheme.
 3. Build and run via **Product > Run** (`Cmd + R`).
 
 ### CLI
@@ -52,15 +52,15 @@ To build the complete macOS application and bundled extension from the terminal:
 
 ```bash
 # Debug build
-xcodebuild -project SafariExtensionHost.xcodeproj -scheme SafariExtensionHost -configuration Debug build
+xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Debug build
 
 # Release build
-xcodebuild -project SafariExtensionHost.xcodeproj -scheme SafariExtensionHost -configuration Release build
+xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Release build
 ```
 
 ## Local Testing in Safari
 
 1. In Safari, navigate to **Develop > Allow Unsigned Extensions** (enable develop menu in **Settings > Advanced** if hidden).
-2. Open **Safari > Settings > Extensions** and tick the checkbox next to **Safari Extension Host**.
+2. Open **Safari > Settings > Extensions** and tick the checkbox next to **Wirt**.
 3. Install any extension package from the [Chrome Web Store](https://chromewebstore.google.com) or [Firefox Add-ons](https://addons.mozilla.org).
-4. Click the **Safari Extension Host** toolbar icon to manage installed extensions or open individual extension popups.
+4. Click the **Wirt** toolbar icon to manage installed extensions or open individual extension popups.

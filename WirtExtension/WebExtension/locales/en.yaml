@@ -1,11 +1,11 @@
-extName: Safari Extension Host
+extName: Wirt
 extDescription:
   Host and transportation layer for Chrome and Firefox extensions in Safari
 hostNotConnectedTitle: Host App Not Connected
-hostNotConnectedInstruction: Open Safari Extension Host to connect.
+hostNotConnectedInstruction: Open Wirt to connect.
 installedExtensionsTitle: Installed Extensions
 refreshTooltip: Refresh
-openHostAppTooltip: Open Safari Extension Host
+openHostAppTooltip: Open Wirt
 backTooltip: Back
 emptyExtensionsTitle: No Extensions Installed
 emptyExtensionsSubtitle: Download a .crx or .xpi package in Safari to install.
