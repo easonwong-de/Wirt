@@ -7,6 +7,7 @@ import type {
 	NativeMatchingScriptsReply,
 	NativeOpenHostAppReply,
 	NativePopupResourcesReply,
+	NativeUninstallPackageReply,
 	RuntimeMessage,
 } from "@/types/extension";
 
@@ -64,10 +65,7 @@ type NativeEnvelope =
 			readonly extensionId: string;
 			readonly keys: readonly string[];
 	  }
-	| {
-			readonly type: "STORAGE_CLEAR";
-			readonly extensionId: string;
-	  }
+	| { readonly type: "STORAGE_CLEAR"; readonly extensionId: string }
 	| {
 			readonly type: "GET_POPUP_RESOURCES";
 			readonly extensionId: string;
@@ -77,18 +75,33 @@ type NativeEnvelope =
 			readonly type: "INSTALL_PACKAGE_FROM_URL";
 			readonly downloadUrl: string;
 			readonly referrer?: string;
-	  };
+	  }
+	| { readonly type: "UNINSTALL_PACKAGE"; readonly extensionId: string };
 
 function sendNativeEnvelope<T extends NativeGenericReply>(
 	envelope: NativeEnvelope,
 ): Promise<T> {
 	return new Promise((resolve) => {
+		let settled = false;
+		const timeoutMs =
+			envelope.type === "INSTALL_PACKAGE_FROM_URL" ? 65000 : 8000;
+
+		const timer = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			logError("Native messaging timed out for", envelope.type);
+			resolve({ error: "Host connection timed out" } as T);
+		}, timeoutMs);
+
 		try {
 			logInfo("Dispatching native message:", envelope.type, envelope);
 			browser.runtime.sendNativeMessage(
 				"application.id",
 				envelope,
 				(response: T | undefined) => {
+					if (settled) return;
+					settled = true;
+					clearTimeout(timer);
 					const err = browser.runtime.lastError;
 					if (err) {
 						logError(
@@ -116,6 +129,9 @@ function sendNativeEnvelope<T extends NativeGenericReply>(
 				},
 			);
 		} catch (err) {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
 			const message = err instanceof Error ? err.message : String(err);
 			logError("Failed to invoke sendNativeMessage:", message);
 			const fallback: NativeGenericReply = { error: message };
@@ -321,6 +337,25 @@ export default defineBackground(() => {
 						const message =
 							err instanceof Error ? err.message : String(err);
 						logError("Error in INSTALL_PACKAGE_FROM_URL:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "UNINSTALL_PACKAGE") {
+				logInfo("Uninstalling package:", request.extensionId);
+				sendNativeEnvelope<NativeUninstallPackageReply>({
+					type: "UNINSTALL_PACKAGE",
+					extensionId: request.extensionId,
+				})
+					.then((res) => {
+						logInfo("Uninstallation completed with response:", res);
+						sendResponse(res);
+					})
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in UNINSTALL_PACKAGE:", message);
 						sendResponse({ error: message });
 					});
 				return true;

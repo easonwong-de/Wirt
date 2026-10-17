@@ -164,6 +164,36 @@
 				return callHostBridge("tabs.query", { queryInfo }).catch(() => []);
 			},
 		},
+		i18n: {
+			getMessage: (messageName, substitutions) => {
+				if (!messageName) return "";
+				const messages = window.__HOST_I18N_MESSAGES__ || {};
+				const key = String(messageName).toLowerCase();
+				let msg = messages[key];
+				if (typeof msg !== "string") {
+					if (key === "@@extension_id") return extId;
+					if (key === "@@ui_locale") return navigator.language || "en";
+					if (key === "@@bidi_dir") return "ltr";
+					if (key === "@@bidi_reversed_dir") return "rtl";
+					return "";
+				}
+				if (substitutions) {
+					const subs = Array.isArray(substitutions)
+						? substitutions
+						: [substitutions];
+					for (let i = 0; i < subs.length; i++) {
+						msg = msg.replace(new RegExp(`\\$${i + 1}`, "g"), String(subs[i]));
+					}
+				}
+				return msg;
+			},
+			getUILanguage: () => navigator.language || "en",
+			getAcceptLanguages: (cb) => {
+				const langs = Array.from(navigator.languages || ["en"]);
+				if (typeof cb === "function") cb(langs);
+				return Promise.resolve(langs);
+			},
+		},
 	};
 
 	window.chrome = shim;

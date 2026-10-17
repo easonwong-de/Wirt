@@ -18,33 +18,39 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     connection.remoteObjectInterface = NSXPCInterface(with: HostXPCProtocol.self)
     connection.resume()
 
+    let lock = NSLock()
+    var hasCompleted = false
+
+    func finish(with reply: [String: Any]) {
+      lock.lock()
+      defer { lock.unlock() }
+      guard !hasCompleted else { return }
+      hasCompleted = true
+      connection.invalidate()
+      Self.complete(context, with: reply)
+    }
+
+    let isInstall = (message["type"] as? String) == "INSTALL_PACKAGE_FROM_URL"
+    let timeout: Double = isInstall ? 60.0 : 6.0
+    DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+      finish(with: ["error": "Host connection timed out."])
+    }
+
     guard
       let host = connection.remoteObjectProxyWithErrorHandler({ error in
         os_log(.error, "SafariWebExtensionHandler XPC proxy error: %@", error.localizedDescription)
-        connection.invalidate()
-        Self.complete(
-          context,
-          with: [
-            "error":
-              "Wirt is not set up. Open the Wirt app once to finish setup."
-          ])
+        finish(with: ["error": "Wirt is not running. Please open the Wirt app."])
       }) as? HostXPCProtocol
     else {
       os_log(.error, "SafariWebExtensionHandler failed to cast XPC proxy")
-      connection.invalidate()
-      Self.complete(
-        context,
-        with: [
-          "error": "Failed to connect to Wirt."
-        ])
+      finish(with: ["error": "Failed to connect to Wirt."])
       return
     }
 
     host.handleExtensionMessage(message) { reply in
       os_log(
         .default, "SafariWebExtensionHandler received native reply: %@", String(describing: reply))
-      connection.invalidate()
-      Self.complete(context, with: reply)
+      finish(with: reply)
     }
   }
 

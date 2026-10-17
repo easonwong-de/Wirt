@@ -7,6 +7,7 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
   private var listener: NSXPCListener?
 
   public func start() {
+    guard listener == nil else { return }
     let listener = NSXPCListener(machServiceName: HostXPC.serviceName)
     listener.delegate = self
     listener.resume()
@@ -45,7 +46,7 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
     case "GET_INSTALLED_EXTENSIONS":
       Task { @MainActor in
         let extensions = self.getInstalledExtensionsPayload()
-        reply(["extensions": extensions])
+        reply(["status": "success", "extensions": extensions])
       }
 
     case "DISPATCH_ACTION_CLICK":
@@ -114,6 +115,7 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
               let dir = ExtensionInstaller.shared.storageDirectory.appendingPathComponent(
                 descriptor.id, isDirectory: true)
               ExtensionRuntime.shared.startBackgroundRuntime(for: descriptor, directory: dir)
+              AppState.shared.loadInstalledExtensions()
             }
             reply(["status": "success", "extensionId": descriptor.id, "name": descriptor.name])
           } catch {
@@ -128,6 +130,24 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
       Task { @MainActor in
         (NSApp.delegate as? AppDelegate)?.showSettings()
         reply(["status": "success"])
+      }
+
+    case "UNINSTALL_PACKAGE":
+      let extId = message["extensionId"] as? String ?? ""
+      guard !extId.isEmpty else {
+        reply(["status": "error", "message": "Missing extensionId"])
+        return
+      }
+      Task { @MainActor in
+        ExtensionRuntime.shared.stopBackgroundRuntime(for: extId)
+        do {
+          try ExtensionInstaller.shared.uninstall(extensionId: extId)
+          ExtensionStorage.shared.deleteStorage(for: extId)
+          AppState.shared.loadInstalledExtensions()
+          reply(["status": "success", "extensionId": extId])
+        } catch {
+          reply(["status": "error", "message": error.localizedDescription])
+        }
       }
 
     default:
@@ -145,6 +165,13 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
       return "<html><body><p>Popup not found.</p></body></html>"
     }
 
+    let messages = ExtensionInstaller.shared.loadLocaleMessages(in: baseDir, defaultLocale: nil)
+    let messagesData = (try? JSONSerialization.data(withJSONObject: messages)) ?? Data("{}".utf8)
+    let messagesJson = String(data: messagesData, encoding: .utf8) ?? "{}"
+
+    let resolvedContent = ExtensionInstaller.shared.resolveI18nString(
+      content, messages: messages, extensionId: extensionId)
+
     let shimURL = Bundle.main.url(
       forResource: "chrome-shim", withExtension: "js", subdirectory: "shim")
     let shimCode =
@@ -152,14 +179,15 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
     let injectedHeader = """
       <script>
       window.__HOST_EXTENSION_ID__ = '\(extensionId)';
+      window.__HOST_I18N_MESSAGES__ = \(messagesJson);
       \(shimCode)
       </script>
       """
 
-    if content.contains("<head>") {
-      return content.replacingOccurrences(of: "<head>", with: "<head>\(injectedHeader)")
+    if resolvedContent.contains("<head>") {
+      return resolvedContent.replacingOccurrences(of: "<head>", with: "<head>\(injectedHeader)")
     }
-    return injectedHeader + content
+    return injectedHeader + resolvedContent
   }
 
   @MainActor
@@ -189,11 +217,13 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
         results.append([
           "id": desc.id,
           "name": desc.name,
+          "description": desc.description,
           "version": desc.version,
           "actionType": actionType,
           "popupPath": popupPath,
           "badgeText": "",
           "badgeColor": "#0071e3",
+          "iconUrl": desc.iconUrl ?? "",
         ])
       }
     }

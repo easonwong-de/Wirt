@@ -9,7 +9,8 @@ public final class ExtensionInstaller: Sendable {
   private init() {
     let appSupport =
       FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-      ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
+      ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(
+        "Library/Application Support")
     let hostDir = appSupport.appendingPathComponent(
       "de.easonwong.Wirt/Extensions", isDirectory: true)
     try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
@@ -60,6 +61,34 @@ public final class ExtensionInstaller: Sendable {
     try FileManager.default.moveItem(at: stagingDir, to: targetDir)
 
     return try parseManifest(in: targetDir, fallbackId: canonicalId)
+  }
+
+  public func uninstall(extensionId: String) throws {
+    let canonicalId = sanitizeIdentifier(extensionId)
+    let directDir = storageDirectory.appendingPathComponent(canonicalId, isDirectory: true)
+    if FileManager.default.fileExists(atPath: directDir.path) {
+      try FileManager.default.removeItem(at: directDir)
+      return
+    }
+
+    guard
+      let items = try? FileManager.default.contentsOfDirectory(
+        at: storageDirectory, includingPropertiesForKeys: nil)
+    else {
+      return
+    }
+
+    for item in items where item.hasDirectoryPath {
+      if let desc = try? parseManifest(in: item, fallbackId: item.lastPathComponent) {
+        if desc.id.lowercased() == extensionId.lowercased()
+          || desc.name.lowercased() == extensionId.lowercased()
+          || item.lastPathComponent.lowercased() == extensionId.lowercased()
+        {
+          try FileManager.default.removeItem(at: item)
+          return
+        }
+      }
+    }
   }
 
   private func deriveExtensionId(from url: URL) -> String {
@@ -124,7 +153,13 @@ public final class ExtensionInstaller: Sendable {
     let data = try Data(contentsOf: manifestURL)
     let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
 
-    let name = json["name"] as? String ?? "Unnamed Extension"
+    let rawName = json["name"] as? String ?? "Unnamed Extension"
+    let rawDescription = json["description"] as? String ?? ""
+    let defaultLocale = json["default_locale"] as? String
+    let messages = loadLocaleMessages(in: directory, defaultLocale: defaultLocale)
+
+    let name = resolveI18nString(rawName, messages: messages, extensionId: fallbackId)
+    let description = resolveI18nString(rawDescription, messages: messages, extensionId: fallbackId)
     let version = json["version"] as? String ?? "1.0.0"
     let manifestVersion = json["manifest_version"] as? Int ?? 3
     let permissions = json["permissions"] as? [String] ?? []
@@ -179,22 +214,222 @@ public final class ExtensionInstaller: Sendable {
       (json["action"] as? [String: Any]) ?? (json["browser_action"] as? [String: Any])
     if let actionDict = actionDict {
       let defaultTitle = actionDict["default_title"] as? String
+      let resolvedTitle = defaultTitle.map {
+        resolveI18nString($0, messages: messages, extensionId: resolvedId)
+      }
       let defaultPopup = actionDict["default_popup"] as? String
       let defaultIcon = actionDict["default_icon"] as? [String: String]
       actionEntry = ActionEntry(
-        defaultTitle: defaultTitle, defaultPopup: defaultPopup, defaultIcon: defaultIcon)
+        defaultTitle: resolvedTitle, defaultPopup: defaultPopup, defaultIcon: defaultIcon)
     }
+
+    let iconUrl = resolveIconDataUrl(in: directory, manifest: json)
 
     return ExtensionDescriptor(
       id: sanitizeIdentifier(resolvedId),
       name: name,
+      description: description,
       version: version,
       manifestVersion: manifestVersion,
       backgroundEntry: backgroundEntry,
       contentScripts: contentScripts,
       action: actionEntry,
-      permissions: permissions
+      permissions: permissions,
+      iconUrl: iconUrl
     )
+  }
+
+  private func resolveIconDataUrl(in directory: URL, manifest: [String: Any]) -> String? {
+    var candidatePaths: [String] = []
+    let preferredSizes = ["32", "48", "64", "96", "38", "128", "16", "19"]
+
+    func extractPaths(from iconValue: Any?) {
+      if let dict = iconValue as? [String: Any] {
+        for size in preferredSizes {
+          if let path = dict[size] as? String, !path.isEmpty {
+            candidatePaths.append(path)
+          }
+        }
+        for (_, val) in dict {
+          if let path = val as? String, !path.isEmpty, !candidatePaths.contains(path) {
+            candidatePaths.append(path)
+          }
+        }
+      } else if let str = iconValue as? String, !str.isEmpty {
+        candidatePaths.append(str)
+      }
+    }
+
+    if let action = (manifest["action"] as? [String: Any])
+      ?? (manifest["browser_action"] as? [String: Any])
+    {
+      extractPaths(from: action["default_icon"])
+    }
+    extractPaths(from: manifest["icons"])
+
+    for candidate in candidatePaths {
+      let cleaned = candidate.hasPrefix("/") ? String(candidate.dropFirst()) : candidate
+      let fileUrl = directory.appendingPathComponent(cleaned)
+      if let data = try? Data(contentsOf: fileUrl), !data.isEmpty {
+        let ext = fileUrl.pathExtension.lowercased()
+        let mime: String
+        switch ext {
+        case "svg": mime = "image/svg+xml"
+        case "jpg", "jpeg": mime = "image/jpeg"
+        case "webp": mime = "image/webp"
+        case "gif": mime = "image/gif"
+        case "ico": mime = "image/x-icon"
+        default: mime = "image/png"
+        }
+        return "data:\(mime);base64,\(data.base64EncodedString())"
+      }
+    }
+
+    return nil
+  }
+
+  public func loadLocaleMessages(in directory: URL, defaultLocale: String?) -> [String: String] {
+    let localesDir = directory.appendingPathComponent("_locales", isDirectory: true)
+    guard FileManager.default.fileExists(atPath: localesDir.path) else {
+      return [:]
+    }
+
+    var candidateCodes: [String] = []
+
+    for lang in Locale.preferredLanguages {
+      let underscore = lang.replacingOccurrences(of: "-", with: "_")
+      let hyphen = lang.replacingOccurrences(of: "_", with: "-")
+      candidateCodes.append(underscore)
+      candidateCodes.append(hyphen)
+      let base = lang.components(separatedBy: CharacterSet(charactersIn: "-_")).first ?? lang
+      candidateCodes.append(base)
+    }
+
+    if let def = defaultLocale, !def.isEmpty {
+      candidateCodes.append(def)
+      candidateCodes.append(def.replacingOccurrences(of: "-", with: "_"))
+      candidateCodes.append(def.replacingOccurrences(of: "_", with: "-"))
+      let base = def.components(separatedBy: CharacterSet(charactersIn: "-_")).first ?? def
+      candidateCodes.append(base)
+    }
+
+    candidateCodes.append("en")
+    candidateCodes.append("en_US")
+    candidateCodes.append("en-US")
+
+    guard
+      let availableDirs = try? FileManager.default.contentsOfDirectory(
+        at: localesDir, includingPropertiesForKeys: nil)
+    else {
+      return [:]
+    }
+    let availableDirNames = availableDirs.filter { $0.hasDirectoryPath }.map {
+      $0.lastPathComponent
+    }
+
+    var baseMessages: [String: String] = [:]
+    if let fallbackDirName = availableDirNames.first(where: { name in
+      if let def = defaultLocale?.lowercased() {
+        return name.lowercased() == def || name.lowercased().hasPrefix(def)
+      }
+      return name.lowercased() == "en" || name.lowercased().hasPrefix("en")
+    }) ?? availableDirNames.first {
+      baseMessages = parseMessagesFile(
+        at: localesDir.appendingPathComponent(fallbackDirName).appendingPathComponent(
+          "messages.json"))
+    }
+
+    var userMessages: [String: String] = [:]
+    for code in candidateCodes {
+      if let matchedDir = availableDirNames.first(where: {
+        $0.caseInsensitiveCompare(code) == .orderedSame
+      }) {
+        userMessages = parseMessagesFile(
+          at: localesDir.appendingPathComponent(matchedDir).appendingPathComponent("messages.json"))
+        if !userMessages.isEmpty {
+          break
+        }
+      }
+    }
+
+    var merged = baseMessages
+    for (k, v) in userMessages {
+      merged[k] = v
+    }
+
+    return merged
+  }
+
+  private func parseMessagesFile(at fileURL: URL) -> [String: String] {
+    guard let data = try? Data(contentsOf: fileURL),
+      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else {
+      return [:]
+    }
+    var result: [String: String] = [:]
+    for (key, val) in json {
+      if let dict = val as? [String: Any], var msg = dict["message"] as? String {
+        if let placeholders = dict["placeholders"] as? [String: [String: Any]] {
+          for (phKey, phVal) in placeholders {
+            if let content = phVal["content"] as? String {
+              msg = msg.replacingOccurrences(
+                of: "$\(phKey)$", with: content, options: .caseInsensitive)
+            }
+          }
+        }
+        result[key.lowercased()] = msg
+      }
+    }
+    return result
+  }
+
+  public func resolveI18nString(
+    _ text: String, messages: [String: String], extensionId: String = ""
+  ) -> String {
+    guard text.contains("__MSG_") else { return text }
+
+    let pattern = #"__MSG_([A-Za-z0-9_@]+?)(?:__|(?<![A-Za-z0-9_@])|$)"#
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+      return text
+    }
+
+    let nsText = text as NSString
+    let matches = regex.matches(
+      in: text, options: [], range: NSRange(location: 0, length: nsText.length))
+    guard !matches.isEmpty else { return text }
+
+    var resolved = text
+    for match in matches.reversed() {
+      guard match.numberOfRanges > 1 else { continue }
+      let keyRange = match.range(at: 1)
+      let key = nsText.substring(with: keyRange).lowercased()
+      let fullRange = match.range(at: 0)
+
+      var replacement: String?
+      if key == "@@extension_id" {
+        replacement = extensionId
+      } else if key == "@@ui_locale" {
+        replacement = Locale.current.identifier
+      } else if key == "@@bidi_dir" {
+        replacement = "ltr"
+      } else if key == "@@bidi_reversed_dir" {
+        replacement = "rtl"
+      } else if key == "@@bidi_start_edge" {
+        replacement = "left"
+      } else if key == "@@bidi_end_edge" {
+        replacement = "right"
+      } else if let msg = messages[key] {
+        replacement = msg
+      }
+
+      if let rep = replacement {
+        if let stringRange = Range(fullRange, in: resolved) {
+          resolved.replaceSubrange(stringRange, with: rep)
+        }
+      }
+    }
+
+    return resolved
   }
 
   private func deriveIdFromPublicKey(_ keyData: Data) -> String {

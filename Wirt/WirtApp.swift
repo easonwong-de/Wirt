@@ -23,15 +23,182 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     return true
   }
 
+  private static let agentLabel = "de.easonwong.Wirt.agent"
+
   func applicationDidFinishLaunching(_ notification: Notification) {
+    cleanStaleExtensions()
+    registerLaunchAgent()
+
     if CommandLine.arguments.contains(Self.backgroundArgument) {
       NSApp.setActivationPolicy(.accessory)
       ExtensionListener.shared.start()
       ExtensionRuntime.shared.bootInstalledExtensions()
-    } else if registerAgent() {
-      handOffToAgent()
-    } else {
-      startForeground()
+      return
+    }
+
+    ensureAgentRunningAndHandOff()
+  }
+
+  private func ensureAgentRunningAndHandOff() {
+    let uid = String(getuid())
+    let kickstartProcess = Process()
+    kickstartProcess.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+    kickstartProcess.arguments = ["kickstart", "-k", "gui/\(uid)/\(Self.agentLabel)"]
+    try? kickstartProcess.run()
+    kickstartProcess.waitUntilExit()
+
+    handOffToAgent()
+  }
+
+  private func registerLaunchAgent() {
+    let agent = SMAppService.agent(plistName: Self.agentPlistName)
+    if agent.status == .enabled || agent.status == .requiresApproval {
+      try? agent.unregister()
+    }
+
+    guard let executablePath = Bundle.main.executablePath else { return }
+
+    let fileManager = FileManager.default
+    let launchAgentsDir = fileManager.homeDirectoryForCurrentUser
+      .appendingPathComponent("Library/LaunchAgents", isDirectory: true)
+    let plistURL = launchAgentsDir.appendingPathComponent(Self.agentPlistName)
+
+    let plistDict: [String: Any] = [
+      "Label": Self.agentLabel,
+      "ProgramArguments": [executablePath, Self.backgroundArgument],
+      "MachServices": [HostXPC.serviceName: true],
+      "ProcessType": "Interactive",
+    ]
+
+    var shouldUpdate = true
+    if fileManager.fileExists(atPath: plistURL.path),
+      let existingData = try? Data(contentsOf: plistURL),
+      let existingPlist = try? PropertyListSerialization.propertyList(
+        from: existingData, format: nil) as? [String: Any],
+      let existingArgs = existingPlist["ProgramArguments"] as? [String],
+      existingArgs == [executablePath, Self.backgroundArgument]
+    {
+      shouldUpdate = false
+    }
+
+    if shouldUpdate {
+      try? fileManager.createDirectory(at: launchAgentsDir, withIntermediateDirectories: true)
+      if let data = try? PropertyListSerialization.data(
+        fromPropertyList: plistDict, format: .xml, options: 0)
+      {
+        try? data.write(to: plistURL)
+      }
+
+      let uid = String(getuid())
+      let bootoutProcess = Process()
+      bootoutProcess.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+      bootoutProcess.arguments = ["bootout", "gui/\(uid)/\(Self.agentLabel)"]
+      try? bootoutProcess.run()
+      bootoutProcess.waitUntilExit()
+
+      let bootstrapProcess = Process()
+      bootstrapProcess.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+      bootstrapProcess.arguments = ["bootstrap", "gui/\(uid)", plistURL.path]
+      try? bootstrapProcess.run()
+      bootstrapProcess.waitUntilExit()
+    }
+  }
+
+  private func cleanStaleExtensions() {
+    DispatchQueue.global(qos: .utility).async {
+      guard
+        let currentExtensionURL = Bundle.main.builtInPlugInsURL?.appendingPathComponent(
+          "WirtExtension.appex", isDirectory: true)
+      else { return }
+
+      let process = Process()
+      process.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
+      process.arguments = ["-m", "-A", "-v", "-i", "de.easonwong.Wirt.Extension"]
+      let pipe = Pipe()
+      process.standardOutput = pipe
+      do {
+        try process.run()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+
+        guard let output = String(data: data, encoding: .utf8) else { return }
+
+        for line in output.components(separatedBy: .newlines) {
+          let trimmed = line.trimmingCharacters(in: .whitespaces)
+          if trimmed.contains("/WirtExtension.appex") {
+            let parts = trimmed.components(separatedBy: "\t")
+            if let path = parts.last?.trimmingCharacters(in: .whitespaces),
+              path != currentExtensionURL.path
+            {
+              let rmProc = Process()
+              rmProc.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
+              rmProc.arguments = ["-r", path]
+              try? rmProc.run()
+              rmProc.waitUntilExit()
+
+              let appURL = URL(fileURLWithPath: path)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+              if appURL.pathExtension == "app" {
+                let lsProc = Process()
+                lsProc.executableURL = URL(
+                  fileURLWithPath:
+                    "/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister"
+                )
+                lsProc.arguments = ["-u", appURL.path]
+                try? lsProc.run()
+                lsProc.waitUntilExit()
+              }
+            }
+          }
+        }
+      } catch {
+        os_log(.error, "cleanStaleExtensions failed: %@", error.localizedDescription)
+      }
+    }
+  }
+
+  private func handOffToAgent() {
+    let connection = NSXPCConnection(machServiceName: HostXPC.serviceName, options: [])
+    connection.remoteObjectInterface = NSXPCInterface(with: HostXPCProtocol.self)
+    connection.resume()
+
+    let lock = NSLock()
+    var hasCompleted = false
+
+    func finish(shouldTerminate: Bool) {
+      lock.lock()
+      defer { lock.unlock() }
+      guard !hasCompleted else { return }
+      hasCompleted = true
+      connection.invalidate()
+      Task { @MainActor in
+        if shouldTerminate {
+          NSApp.terminate(nil)
+        } else {
+          self.startForeground()
+        }
+      }
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+      finish(shouldTerminate: false)
+    }
+
+    guard
+      let agent = connection.remoteObjectProxyWithErrorHandler({ error in
+        os_log(.error, "Launch agent hand-off failed: %@", error.localizedDescription)
+        finish(shouldTerminate: false)
+      }) as? HostXPCProtocol
+    else {
+      os_log(.error, "Failed to obtain remote proxy for launch agent")
+      finish(shouldTerminate: false)
+      return
+    }
+
+    agent.showSettings {
+      finish(shouldTerminate: true)
     }
   }
 
@@ -46,58 +213,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     guard window == nil else { return }
     setupMainMenu()
     setupWindow()
-  }
-
-  @discardableResult
-  private func registerAgent() -> Bool {
-    #if DEBUG
-    let agent = SMAppService.agent(plistName: Self.agentPlistName)
-    if agent.status == .enabled {
-      try? agent.unregister()
-    }
-    return false
-    #else
-    let agent = SMAppService.agent(plistName: Self.agentPlistName)
-    if agent.status != .enabled {
-      do {
-        try agent.register()
-      } catch {
-        os_log(.error, "Launch agent registration failed: %@", error.localizedDescription)
-      }
-    }
-    if agent.status == .requiresApproval {
-      SMAppService.openSystemSettingsLoginItems()
-    }
-    return agent.status == .enabled
-    #endif
-  }
-
-  private func handOffToAgent() {
-    let connection = NSXPCConnection(machServiceName: HostXPC.serviceName, options: [])
-    connection.remoteObjectInterface = NSXPCInterface(with: HostXPCProtocol.self)
-    connection.resume()
-
-    guard
-      let agent = connection.remoteObjectProxyWithErrorHandler({ [weak self] error in
-        os_log(.error, "Launch agent hand-off failed: %@", error.localizedDescription)
-        connection.invalidate()
-        Task { @MainActor in
-          self?.startForeground()
-        }
-      }) as? HostXPCProtocol
-    else {
-      os_log(.error, "Failed to obtain remote proxy for launch agent")
-      connection.invalidate()
-      startForeground()
-      return
-    }
-
-    agent.showSettings {
-      connection.invalidate()
-      Task { @MainActor in
-        NSApp.terminate(nil)
-      }
-    }
   }
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool
@@ -120,14 +235,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.deminiaturize(nil)
       }
       window.makeKeyAndOrderFront(nil)
+      window.orderFrontRegardless()
     }
-    NSApp.activate()
+    NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps])
+    NSApp.activate(ignoringOtherApps: true)
   }
 
   @objc func quitApp() {
-    NSApp.terminate(nil)
+    window?.orderOut(nil)
+    NSApp.setActivationPolicy(.accessory)
   }
 
+  @objc func terminateEntireApp() {
+    NSApp.terminate(nil)
+  }
 
   private func updateWindowSize(to contentHeight: CGFloat, animated: Bool) {
     guard let window = self.window else { return }
@@ -220,12 +341,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         action: #selector(NSApplication.unhideAllApplications(_:)),
         keyEquivalent: ""))
     appMenu.addItem(NSMenuItem.separator())
-    let quitItem = NSMenuItem(
-      title: "Quit Wirt",
+    let closeWirtItem = NSMenuItem(
+      title: "Close Wirt",
       action: #selector(quitApp),
       keyEquivalent: "q")
-    quitItem.target = self
-    appMenu.addItem(quitItem)
+    closeWirtItem.target = self
+    appMenu.addItem(closeWirtItem)
+
+    let terminateItem = NSMenuItem(
+      title: "Quit Wirt & Stop Background Service",
+      action: #selector(terminateEntireApp),
+      keyEquivalent: "q")
+    terminateItem.keyEquivalentModifierMask = [.command, .option]
+    terminateItem.target = self
+    appMenu.addItem(terminateItem)
     appMenuItem.submenu = appMenu
 
     let editMenuItem = NSMenuItem()

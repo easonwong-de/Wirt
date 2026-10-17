@@ -3,31 +3,37 @@ import Foundation
 public struct ExtensionDescriptor: Codable, Identifiable, Sendable {
   public let id: String
   public let name: String
+  public let description: String
   public let version: String
   public let manifestVersion: Int
   public let backgroundEntry: BackgroundEntry?
   public let contentScripts: [ContentScriptEntry]
   public let action: ActionEntry?
   public let permissions: [String]
+  public let iconUrl: String?
 
   public init(
     id: String,
     name: String,
+    description: String = "",
     version: String,
     manifestVersion: Int,
     backgroundEntry: BackgroundEntry?,
     contentScripts: [ContentScriptEntry],
     action: ActionEntry?,
-    permissions: [String]
+    permissions: [String],
+    iconUrl: String? = nil
   ) {
     self.id = id
     self.name = name
+    self.description = description
     self.version = version
     self.manifestVersion = manifestVersion
     self.backgroundEntry = backgroundEntry
     self.contentScripts = contentScripts
     self.action = action
     self.permissions = permissions
+    self.iconUrl = iconUrl
   }
 }
 

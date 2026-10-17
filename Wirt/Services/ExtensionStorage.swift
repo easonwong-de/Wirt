@@ -84,6 +84,13 @@ public final class ExtensionStorage: Sendable {
     }
   }
 
+  public func deleteStorage(for extensionId: String) {
+    queue.async(flags: .barrier) {
+      let url = self.fileURL(for: extensionId)
+      try? FileManager.default.removeItem(at: url)
+    }
+  }
+
   private func fileURL(for extensionId: String) -> URL {
     let safeName = sanitizeIdentifier(extensionId)
     return baseDirectory.appendingPathComponent("\(safeName).json")

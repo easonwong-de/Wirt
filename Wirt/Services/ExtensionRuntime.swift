@@ -56,10 +56,18 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
     let userContent = config.userContentController
     userContent.add(WeakScriptMessageHandler(delegate: self), name: "hostBridge")
 
+    let messages = ExtensionInstaller.shared.loadLocaleMessages(in: directory, defaultLocale: nil)
+    let messagesData = (try? JSONSerialization.data(withJSONObject: messages)) ?? Data("{}".utf8)
+    let messagesJson = String(data: messagesData, encoding: .utf8) ?? "{}"
+
     let shimURL = Bundle.main.url(
       forResource: "chrome-shim", withExtension: "js", subdirectory: "shim")
     if let shimURL = shimURL, let shimCode = try? String(contentsOf: shimURL, encoding: .utf8) {
-      let initScript = "window.__HOST_EXTENSION_ID__ = '\(descriptor.id)';\n" + shimCode
+      let initScript = """
+        window.__HOST_EXTENSION_ID__ = '\(descriptor.id)';
+        window.__HOST_I18N_MESSAGES__ = \(messagesJson);
+        \(shimCode)
+        """
       let userScript = WKUserScript(
         source: initScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
       userContent.addUserScript(userScript)
@@ -85,6 +93,17 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
       </html>
       """
     webView.loadHTMLString(syntheticHtml, baseURL: URL(string: "ext-bg://\(descriptor.id)/")!)
+  }
+
+  public func stopBackgroundRuntime(for extensionId: String) {
+    let target = extensionId.lowercased()
+    let matchingKeys = backgroundWebViews.keys.filter { $0.lowercased() == target }
+    for key in matchingKeys {
+      if let webView = backgroundWebViews.removeValue(forKey: key) {
+        webView.stopLoading()
+        webView.configuration.userContentController.removeAllScriptMessageHandlers()
+      }
+    }
   }
 
   public func dispatchRuntimeMessage(
@@ -150,7 +169,8 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
     }
 
     let baseDir = ExtensionInstaller.shared.storageDirectory.appendingPathComponent(
-      extId, isDirectory: true).standardizedFileURL
+      extId, isDirectory: true
+    ).standardizedFileURL
     let filePath = baseDir.appendingPathComponent(url.path).standardizedFileURL
 
     let baseComponents = baseDir.pathComponents
@@ -262,6 +282,7 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
         continue
       }
 
+      let messages = ExtensionInstaller.shared.loadLocaleMessages(in: item, defaultLocale: nil)
       var scripts: [[String: String]] = []
       var styles: [String] = []
 
@@ -281,7 +302,9 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
           for cssPath in cs.css {
             let fileUrl = item.appendingPathComponent(cssPath)
             if let content = try? String(contentsOf: fileUrl, encoding: .utf8) {
-              styles.append(content)
+              let resolvedCss = ExtensionInstaller.shared.resolveI18nString(
+                content, messages: messages, extensionId: desc.id)
+              styles.append(resolvedCss)
             }
           }
         }
