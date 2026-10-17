@@ -15,6 +15,16 @@ export const ExtensionItem: React.FC<ExtensionItemProps> = ({
 	const hasAction =
 		extension.actionType === "popup" || extension.actionType === "click";
 
+	const getActionTooltip = (): string | undefined => {
+		if (extension.actionType === "popup") {
+			return i18n.t("openPopupActionTooltip");
+		}
+		if (extension.actionType === "click") {
+			return i18n.t("triggerActionTooltip");
+		}
+		return undefined;
+	};
+
 	return (
 		<div
 			className={
@@ -25,9 +35,18 @@ export const ExtensionItem: React.FC<ExtensionItemProps> = ({
 			onClick={() => void onClick(extension)}
 			role={hasAction ? "button" : undefined}
 			tabIndex={hasAction ? 0 : undefined}
+			title={getActionTooltip()}
 		>
 			<div className={styles.extensionIcon}>
-				<Icon type="extension" size={16} />
+				{extension.iconUrl ? (
+					<img
+						src={extension.iconUrl}
+						alt=""
+						className={styles.iconImage}
+					/>
+				) : (
+					<Icon type="extension" size={16} />
+				)}
 			</div>
 			<span className={styles.extensionName}>{extension.name}</span>
 			{extension.badgeText ? (

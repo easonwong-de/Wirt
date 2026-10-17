@@ -3,6 +3,7 @@ export type ActionType = "popup" | "click" | "none";
 export interface ExtensionDescriptor {
 	readonly id: string;
 	readonly name: string;
+	readonly description?: string;
 	readonly version: string;
 	readonly actionType: ActionType;
 	readonly popupPath: string;
@@ -32,6 +33,7 @@ export interface MatchingExtension {
 }
 
 export interface NativeInstalledExtensionsReply {
+	readonly status?: "success" | "error";
 	readonly extensions?: readonly ExtensionDescriptor[];
 	readonly error?: string;
 }
@@ -50,6 +52,13 @@ export interface NativeInstallPackageReply {
 	readonly status: "success" | "error";
 	readonly extensionId?: string;
 	readonly name?: string;
+	readonly message?: string;
+	readonly error?: string;
+}
+
+export interface NativeUninstallPackageReply {
+	readonly status: "success" | "error";
+	readonly extensionId?: string;
 	readonly message?: string;
 	readonly error?: string;
 }
@@ -82,6 +91,7 @@ export type NativeResponse =
 	| NativeActionClickReply
 	| NativeMatchingScriptsReply
 	| NativeInstallPackageReply
+	| NativeUninstallPackageReply
 	| NativeOpenHostAppReply
 	| NativePopupResourcesReply
 	| NativeGenericReply;
@@ -105,6 +115,7 @@ export type RuntimeMessage =
 			readonly downloadUrl: string;
 			readonly referrer?: string;
 	  }
+	| { readonly type: "UNINSTALL_PACKAGE"; readonly extensionId: string }
 	| {
 			readonly type: "STORAGE_GET";
 			readonly extensionId: string;

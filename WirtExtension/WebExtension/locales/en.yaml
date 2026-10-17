@@ -10,3 +10,6 @@ backTooltip: Back
 emptyExtensionsTitle: No Extensions Installed
 emptyExtensionsSubtitle: Download a .crx or .xpi package in Safari to install.
 extensionPopupFallback: Extension Popup
+openPopupActionTooltip: Open extension popup
+triggerActionTooltip: Trigger extension action
+closeTooltip: Close

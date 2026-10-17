@@ -34,11 +34,26 @@ final class AppState: ObservableObject {
 
   func checkExtensionState() {
     SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleId) {
-      state, _ in
+      state, error in
       Task { @MainActor in
-        let enabled = state?.isEnabled ?? false
-        if self.isExtensionEnabled != enabled {
-          self.isExtensionEnabled = enabled
+        if let state = state {
+          if self.isExtensionEnabled != state.isEnabled {
+            self.isExtensionEnabled = state.isEnabled
+          }
+        } else if error != nil {
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            SFSafariExtensionManager.getStateOfSafariExtension(
+              withIdentifier: self.extensionBundleId
+            ) { retryState, _ in
+              if let retryState = retryState {
+                Task { @MainActor in
+                  if self.isExtensionEnabled != retryState.isEnabled {
+                    self.isExtensionEnabled = retryState.isEnabled
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -59,7 +74,13 @@ final class AppState: ObservableObject {
       if let desc = try? ExtensionInstaller.shared.parseManifest(
         in: item, fallbackId: item.lastPathComponent)
       {
-        loaded.append(InstalledExtensionItem(id: desc.id, name: desc.name, version: desc.version))
+        loaded.append(
+          InstalledExtensionItem(
+            id: desc.id,
+            name: desc.name,
+            description: desc.description,
+            version: desc.version,
+            iconUrl: desc.iconUrl))
       }
     }
     installedExtensions = loaded
@@ -173,22 +194,8 @@ struct ContentView: View {
 
   private var activeView: some View {
     VStack(alignment: .leading, spacing: 12) {
-      HStack(spacing: 6) {
-        Text("Installed Extensions")
-          .font(.system(size: 13, weight: .semibold))
-
-        Button {
-          state.checkExtensionState()
-          state.loadInstalledExtensions()
-        } label: {
-          Image(systemName: "arrow.clockwise")
-            .font(.system(size: 11, weight: .medium))
-        }
-        .buttonStyle(.plain)
-        .help("Refresh installed extensions")
-
-        Spacer()
-      }
+      Text("Installed Extensions")
+        .font(.system(size: 13, weight: .semibold))
 
       if state.installedExtensions.isEmpty {
         VStack(spacing: 12) {
@@ -217,16 +224,35 @@ struct ContentView: View {
           LazyVStack(spacing: 0) {
             ForEach(state.installedExtensions) { ext in
               HStack(spacing: 12) {
-                Image(systemName: "puzzlepiece.extension.fill")
-                  .font(.system(size: 18))
-                  .foregroundStyle(Color.accentColor)
+                if let iconUrl = ext.iconUrl,
+                  let commaIndex = iconUrl.firstIndex(of: ","),
+                  let data = Data(
+                    base64Encoded: String(iconUrl[iconUrl.index(after: commaIndex)...])),
+                  let nsImage = NSImage(data: data)
+                {
+                  Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                } else {
+                  Image(systemName: "puzzlepiece.extension.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.accentColor)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                   Text(ext.name)
                     .font(.system(size: 13, weight: .medium))
+                  if !ext.description.isEmpty {
+                    Text(ext.description)
+                      .font(.system(size: 11))
+                      .foregroundStyle(.secondary)
+                      .lineLimit(2)
+                  }
                   Text("v\(ext.version)")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
                 }
 
                 Spacer()
@@ -257,5 +283,7 @@ struct ContentView: View {
 struct InstalledExtensionItem: Identifiable {
   let id: String
   let name: String
+  let description: String
   let version: String
+  let iconUrl: String?
 }

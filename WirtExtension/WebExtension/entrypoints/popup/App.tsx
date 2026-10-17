@@ -106,22 +106,32 @@ export const App: React.FC = () => {
 		<div className={styles.container}>
 			{activeExtension !== null ? (
 				<>
-					<header className={styles.popupHeader}>
+					<header className={styles.header}>
+						<div className={styles.titleGroup}>
+							<div className={styles.titleIcon}>
+								{activeExtension.iconUrl ? (
+									<img
+										src={activeExtension.iconUrl}
+										alt=""
+										className={styles.iconImage}
+									/>
+								) : (
+									<Icon type="extension" size={16} />
+								)}
+							</div>
+							<span className={styles.headerTitle}>
+								{activeExtension.name}
+							</span>
+						</div>
 						<button
 							type="button"
 							className={styles.iconButton}
 							onClick={() => setActiveExtension(null)}
-							title={i18n.t("backTooltip")}
-							aria-label={i18n.t("backTooltip")}
+							title={i18n.t("closeTooltip")}
+							aria-label={i18n.t("closeTooltip")}
 						>
-							<Icon type="back" size={13} />
+							<Icon type="close" size={11} />
 						</button>
-						<div className={styles.extensionIcon}>
-							<Icon type="extension" size={16} />
-						</div>
-						<span className={styles.headerTitle}>
-							{activeExtension.name}
-						</span>
 					</header>
 					<hr className={styles.divider} />
 					<div className={styles.frameContainer}>
@@ -160,29 +170,23 @@ export const App: React.FC = () => {
 			) : connectionState === "connected" ? (
 				<>
 					<header className={styles.header}>
-						<span className={styles.headerTitle}>
-							{i18n.t("installedExtensionsTitle")}
-						</span>
-						<div className={styles.headerActions}>
-							<button
-								type="button"
-								className={styles.iconButton}
-								onClick={() => void loadExtensions()}
-								title={i18n.t("refreshTooltip")}
-								aria-label={i18n.t("refreshTooltip")}
-							>
-								<Icon type="reload" size={12} />
-							</button>
-							<button
-								type="button"
-								className={styles.iconButton}
-								onClick={() => void handleOpenHostApp()}
-								title={i18n.t("openHostAppTooltip")}
-								aria-label={i18n.t("openHostAppTooltip")}
-							>
-								<Icon type="cog" size={13} />
-							</button>
+						<div className={styles.titleGroup}>
+							<div className={styles.titleIcon}>
+								<Icon type="extension" size={16} />
+							</div>
+							<span className={styles.headerTitle}>
+								{i18n.t("installedExtensionsTitle")}
+							</span>
 						</div>
+						<button
+							type="button"
+							className={styles.iconButton}
+							onClick={() => void handleOpenHostApp()}
+							title={i18n.t("openHostAppTooltip")}
+							aria-label={i18n.t("openHostAppTooltip")}
+						>
+							<Icon type="cog" size={13} />
+						</button>
 					</header>
 					<hr className={styles.divider} />
 					{extensions.length === 0 ? (
