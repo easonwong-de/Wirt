@@ -15,3 +15,7 @@ Run Chrome and Firefox extensions directly in Safari on macOS.
 ## Documentation
 
 See [`docs/architecture.md`](docs/architecture.md) for technical architecture and design specifications.
+
+## Licence
+
+Wirt is distributed under the GNU General Public Licence v3.0. See [LICENSE](LICENSE) for details.
