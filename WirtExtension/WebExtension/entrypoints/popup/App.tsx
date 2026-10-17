@@ -18,6 +18,7 @@ export const App: React.FC = () => {
 	>([]);
 	const [activeExtension, setActiveExtension] =
 		useState<ExtensionDescriptor | null>(null);
+	const [popupHtml, setPopupHtml] = useState<string>("");
 	const [activeTab, setActiveTab] = useState<ActiveTab | null>(null);
 
 	const loadExtensions = useCallback(async () => {
@@ -67,6 +68,22 @@ export const App: React.FC = () => {
 		async (ext: ExtensionDescriptor) => {
 			if (ext.actionType === "popup") {
 				setActiveExtension(ext);
+				setPopupHtml("");
+				try {
+					const res = (await browser.runtime.sendMessage({
+						type: "GET_POPUP_RESOURCES",
+						extensionId: ext.id,
+						popupPath: ext.popupPath,
+					})) as { readonly html?: string } | undefined;
+					setPopupHtml(
+						res?.html ??
+							"<html><body><p>Popup could not be loaded.</p></body></html>",
+					);
+				} catch {
+					setPopupHtml(
+						"<html><body><p>Failed to load popup.</p></body></html>",
+					);
+				}
 				return;
 			}
 
@@ -110,7 +127,7 @@ export const App: React.FC = () => {
 					<div className={styles.frameContainer}>
 						<iframe
 							className={styles.popupFrame}
-							src={`ext-ui://${activeExtension.id}/${activeExtension.popupPath}`}
+							srcDoc={popupHtml}
 							sandbox="allow-scripts allow-forms allow-same-origin"
 							title={activeExtension.name}
 						/>

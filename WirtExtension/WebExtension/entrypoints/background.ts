@@ -6,6 +6,7 @@ import type {
 	NativeInstallPackageReply,
 	NativeMatchingScriptsReply,
 	NativeOpenHostAppReply,
+	NativePopupResourcesReply,
 	RuntimeMessage,
 } from "@/types/extension";
 
@@ -46,7 +47,31 @@ type NativeEnvelope =
 				readonly frameId?: number;
 				readonly url?: string;
 			};
-			readonly payload: Record<string, string | number | boolean | null>;
+			readonly payload: unknown;
+	  }
+	| {
+			readonly type: "STORAGE_GET";
+			readonly extensionId: string;
+			readonly keys?: unknown;
+	  }
+	| {
+			readonly type: "STORAGE_SET";
+			readonly extensionId: string;
+			readonly items: Record<string, unknown>;
+	  }
+	| {
+			readonly type: "STORAGE_REMOVE";
+			readonly extensionId: string;
+			readonly keys: readonly string[];
+	  }
+	| {
+			readonly type: "STORAGE_CLEAR";
+			readonly extensionId: string;
+	  }
+	| {
+			readonly type: "GET_POPUP_RESOURCES";
+			readonly extensionId: string;
+			readonly popupPath: string;
 	  }
 	| {
 			readonly type: "INSTALL_PACKAGE_FROM_URL";
@@ -194,6 +219,88 @@ export default defineBackground(() => {
 						const message =
 							err instanceof Error ? err.message : String(err);
 						logError("Error in RUNTIME_SEND_MESSAGE:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "STORAGE_GET") {
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "STORAGE_GET",
+					extensionId: request.extensionId,
+					keys: request.keys,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in STORAGE_GET:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "STORAGE_SET") {
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "STORAGE_SET",
+					extensionId: request.extensionId,
+					items: request.items,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in STORAGE_SET:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "STORAGE_REMOVE") {
+				const keys = Array.isArray(request.keys)
+					? request.keys
+					: [request.keys];
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "STORAGE_REMOVE",
+					extensionId: request.extensionId,
+					keys,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in STORAGE_REMOVE:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "STORAGE_CLEAR") {
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "STORAGE_CLEAR",
+					extensionId: request.extensionId,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in STORAGE_CLEAR:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "GET_POPUP_RESOURCES") {
+				sendNativeEnvelope<NativePopupResourcesReply>({
+					type: "GET_POPUP_RESOURCES",
+					extensionId: request.extensionId,
+					popupPath: request.popupPath,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in GET_POPUP_RESOURCES:", message);
 						sendResponse({ error: message });
 					});
 				return true;

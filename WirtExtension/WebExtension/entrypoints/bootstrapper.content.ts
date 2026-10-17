@@ -9,11 +9,29 @@ interface AmoApiResponse {
 	readonly current_version?: { readonly file?: { readonly url?: string } };
 }
 
+interface StorageAreaShim {
+	readonly get: (
+		keys?: unknown,
+		cb?: (res: Record<string, unknown>) => void,
+	) => Promise<Record<string, unknown>>;
+	readonly set: (
+		items: Record<string, unknown>,
+		cb?: (res: { readonly status: "success" }) => void,
+	) => Promise<{ readonly status: "success" }>;
+	readonly remove: (
+		keys: readonly string[] | string,
+		cb?: (res: { readonly status: "success" }) => void,
+	) => Promise<{ readonly status: "success" }>;
+	readonly clear: (
+		cb?: (res: { readonly status: "success" }) => void,
+	) => Promise<{ readonly status: "success" }>;
+}
+
 interface ScopedShim {
 	readonly runtime: {
 		readonly id: string;
 		readonly sendMessage: (
-			payload: Record<string, string | number | boolean | null>,
+			payload: unknown,
 			callback?: (res: NativeGenericReply) => void,
 		) => Promise<NativeGenericReply>;
 		readonly onMessage: {
@@ -23,18 +41,8 @@ interface ScopedShim {
 		readonly getURL: (path: string) => string;
 	};
 	readonly storage: {
-		readonly local: {
-			readonly get: (
-				keys: readonly string[] | string,
-				cb?: (
-					res: Record<string, string | number | boolean | null>,
-				) => void,
-			) => Promise<Record<string, string | number | boolean | null>>;
-			readonly set: (
-				items: Record<string, string | number | boolean | null>,
-				cb?: (res: { readonly status: "success" }) => void,
-			) => Promise<{ readonly status: "success" }>;
-		};
+		readonly local: StorageAreaShim;
+		readonly sync: StorageAreaShim;
 	};
 }
 
@@ -440,46 +448,86 @@ function createShim(extensionId: string): ScopedShim {
 				`ext-res://${extensionId}/${path.replace(/^\//, "")}`,
 		},
 		storage: {
-			local: {
-				get: (
-					keys: readonly string[] | string,
-					cb?: (
-						res: Record<string, string | number | boolean | null>,
-					) => void,
-				) => {
-					const promise = safeSendMessage<
-						Record<string, string | number | boolean | null>
-					>({
-						type: "STORAGE_GET",
-						extensionId,
-						area: "local",
-						keys,
-					});
-					if (cb) {
-						promise.then(cb);
-					}
-					return promise;
-				},
-				set: (
-					items: Record<string, string | number | boolean | null>,
-					cb?: (res: { readonly status: "success" }) => void,
-				) => {
-					const promise = safeSendMessage<{
-						readonly status: "success";
-					}>({
-						type: "STORAGE_SET",
-						extensionId,
-						area: "local",
-						items,
-					});
-					if (cb) {
-						promise.then(cb);
-					}
-					return promise;
-				},
-			},
+			local: makeStorageArea("local"),
+			sync: makeStorageArea("sync"),
 		},
 	};
+
+	function makeStorageArea(area: "local" | "sync"): StorageAreaShim {
+		return {
+			get: (keys, cb) => {
+				const promise = safeSendMessage<Record<string, unknown>>({
+					type: "STORAGE_GET",
+					extensionId,
+					area,
+					keys,
+				}).then((res) => ((res as { data?: Record<string, unknown> }).data ?? {}));
+				if (cb) {
+					promise.then(cb);
+				}
+				return promise;
+			},
+			set: (items, cb) => {
+				const promise = safeSendMessage<{ readonly status: "success" }>({
+					type: "STORAGE_SET",
+					extensionId,
+					area,
+					items,
+				});
+				if (cb) {
+					promise.then(cb);
+				}
+				return promise;
+			},
+			remove: (keys, cb) => {
+				const keyList = Array.isArray(keys) ? keys : [keys];
+				const promise = safeSendMessage<{ readonly status: "success" }>({
+					type: "STORAGE_REMOVE",
+					extensionId,
+					area,
+					keys: keyList,
+				});
+				if (cb) {
+					promise.then(cb);
+				}
+				return promise;
+			},
+			clear: (cb) => {
+				const promise = safeSendMessage<{ readonly status: "success" }>({
+					type: "STORAGE_CLEAR",
+					extensionId,
+					area,
+				});
+				if (cb) {
+					promise.then(cb);
+				}
+				return promise;
+			},
+		};
+	}
+}
+
+function scheduleScriptExecution(
+	runAt: string | undefined,
+	fn: () => void,
+): void {
+	if (runAt === "document_idle") {
+		if (typeof window.requestIdleCallback === "function") {
+			window.requestIdleCallback(() => fn(), { timeout: 2000 });
+		} else {
+			setTimeout(fn, 100);
+		}
+	} else if (runAt === "document_end") {
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", () => fn(), {
+				once: true,
+			});
+		} else {
+			fn();
+		}
+	} else {
+		fn();
+	}
 }
 
 function evaluateScopedScript(
@@ -527,25 +575,43 @@ async function initialiseMatchingScripts(): Promise<void> {
 			response.matchingExtensions.map((e) => e.id),
 		);
 
+		const isMainFrame = window.self === window.top;
+
 		for (const ext of response.matchingExtensions) {
 			if (ext.styles) {
 				for (const cssText of ext.styles) {
-					const style = document.createElement("style");
-					style.setAttribute("data-hosted-ext", ext.id);
-					style.textContent = cssText;
-					(document.head || document.documentElement).appendChild(
-						style,
-					);
+					const injectStyle = () => {
+						const style = document.createElement("style");
+						style.setAttribute("data-hosted-ext", ext.id);
+						style.textContent = cssText;
+						(
+							document.head || document.documentElement
+						)?.appendChild(style);
+					};
+					if (document.head || document.documentElement) {
+						injectStyle();
+					} else {
+						document.addEventListener(
+							"DOMContentLoaded",
+							injectStyle,
+							{ once: true },
+						);
+					}
 				}
 			}
 
 			if (ext.scripts) {
 				for (const scriptItem of ext.scripts) {
-					evaluateScopedScript(
-						scriptItem.code,
-						ext.id,
-						scriptItem.path,
-					);
+					if (!isMainFrame && scriptItem.allFrames === false) {
+						continue;
+					}
+					scheduleScriptExecution(scriptItem.runAt, () => {
+						evaluateScopedScript(
+							scriptItem.code,
+							ext.id,
+							scriptItem.path,
+						);
+					});
 				}
 			}
 		}

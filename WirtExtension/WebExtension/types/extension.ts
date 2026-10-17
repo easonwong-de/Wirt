@@ -21,6 +21,8 @@ export interface ActiveTab {
 export interface MatchingScriptItem {
 	readonly code: string;
 	readonly path?: string;
+	readonly runAt?: string;
+	readonly allFrames?: boolean;
 }
 
 export interface MatchingExtension {
@@ -57,6 +59,12 @@ export interface NativeOpenHostAppReply {
 	readonly error?: string;
 }
 
+export interface NativePopupResourcesReply {
+	readonly status: "success" | "error";
+	readonly html?: string;
+	readonly error?: string;
+}
+
 export interface NativeGenericReply {
 	readonly status?: string;
 	readonly error?: string;
@@ -65,6 +73,8 @@ export interface NativeGenericReply {
 	readonly extensionId?: string;
 	readonly name?: string;
 	readonly message?: string;
+	readonly data?: Record<string, unknown>;
+	readonly html?: string;
 }
 
 export type NativeResponse =
@@ -73,6 +83,7 @@ export type NativeResponse =
 	| NativeMatchingScriptsReply
 	| NativeInstallPackageReply
 	| NativeOpenHostAppReply
+	| NativePopupResourcesReply
 	| NativeGenericReply;
 
 export type RuntimeMessage =
@@ -87,7 +98,7 @@ export type RuntimeMessage =
 	| {
 			readonly type: "RUNTIME_SEND_MESSAGE";
 			readonly extensionId: string;
-			readonly payload: Record<string, string | number | boolean | null>;
+			readonly payload: unknown;
 	  }
 	| {
 			readonly type: "INSTALL_PACKAGE_FROM_URL";
@@ -97,12 +108,28 @@ export type RuntimeMessage =
 	| {
 			readonly type: "STORAGE_GET";
 			readonly extensionId: string;
-			readonly area: "local";
-			readonly keys: readonly string[] | string;
+			readonly area?: "local" | "sync";
+			readonly keys?: unknown;
 	  }
 	| {
 			readonly type: "STORAGE_SET";
 			readonly extensionId: string;
-			readonly area: "local";
-			readonly items: Record<string, string | number | boolean | null>;
+			readonly area?: "local" | "sync";
+			readonly items: Record<string, unknown>;
+	  }
+	| {
+			readonly type: "STORAGE_REMOVE";
+			readonly extensionId: string;
+			readonly area?: "local" | "sync";
+			readonly keys: readonly string[] | string;
+	  }
+	| {
+			readonly type: "STORAGE_CLEAR";
+			readonly extensionId: string;
+			readonly area?: "local" | "sync";
+	  }
+	| {
+			readonly type: "GET_POPUP_RESOURCES";
+			readonly extensionId: string;
+			readonly popupPath: string;
 	  };
