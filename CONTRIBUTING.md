@@ -17,12 +17,11 @@ Ensure the following tools are installed:
 treeView-beta
 ├── Wirt/ ## macOS host application
 │   ├── Assets.xcassets/ ## application asset catalogue
-│   ├── Core/ ## data models and persistent storage
-│   ├── Ingestion/ ## package extraction and manifest parser
-│   ├── IPC/ ## XPC communication with companion extension
 │   ├── LaunchAgents/ ## background launch agent configuration
+│   ├── Models/ ## data models and representations
+│   ├── Protocols/ ## XPC communication protocol
 │   ├── Resources/ ## host bundle resources and shims
-│   ├── Supervisor/ ## extension runtime supervisor and webviews
+│   ├── Services/ ## installer, runtime, and XPC listener services
 │   ├── ContentView.swift ## host application SwiftUI view
 │   ├── Info.plist ## host application property list
 │   ├── Wirt.entitlements ## host application security entitlements
