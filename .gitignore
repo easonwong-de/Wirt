@@ -119,5 +119,5 @@ WirtExtension/WebExtension/.wxt/
 WirtExtension/Resources/
 !WirtExtension/WebExtension/public/icon/
 
-# SweetPad Build Server
-buildServer.json
+.derivedData/
+

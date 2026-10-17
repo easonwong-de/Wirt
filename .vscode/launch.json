@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Wirt",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${env:HOME}/Library/Developer/Xcode/DerivedData/Wirt-ajzqhwnryeguwlhayvyydclusasz/Build/Products/Debug/Wirt.app/Contents/MacOS/Wirt",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build Wirt (Debug)"
+    },
+    {
+      "name": "Attach to Wirt",
+      "type": "lldb",
+      "request": "attach",
+      "program": "${env:HOME}/Library/Developer/Xcode/DerivedData/Wirt-ajzqhwnryeguwlhayvyydclusasz/Build/Products/Debug/Wirt.app/Contents/MacOS/Wirt",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

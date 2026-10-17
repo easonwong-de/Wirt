@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Wirt (Debug)",
+      "type": "shell",
+      "command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Debug -destination 'platform=macOS' build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$xcode"]
+    },
+    {
+      "label": "Build Wirt (Release)",
+      "type": "shell",
+      "command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Release -destination 'platform=macOS' build",
+      "group": "build",
+      "problemMatcher": ["$xcode"]
+    },
+    {
+      "label": "Clean Wirt",
+      "type": "shell",
+      "command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -destination 'platform=macOS' clean",
+      "problemMatcher": []
+    }
+  ]
+}
