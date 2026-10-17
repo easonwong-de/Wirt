@@ -1,11 +1,17 @@
 import type {
+	ExtensionDescriptor,
 	NativeGenericReply,
+	NativeInstalledExtensionsReply,
 	NativeInstallPackageReply,
 	NativeMatchingScriptsReply,
+	NativeUninstallPackageReply,
 	RuntimeMessage,
 } from "@/types/extension";
 
 interface AmoApiResponse {
+	readonly guid?: string;
+	readonly slug?: string;
+	readonly name?: string | Record<string, string>;
 	readonly current_version?: { readonly file?: { readonly url?: string } };
 }
 
@@ -44,25 +50,29 @@ interface ScopedShim {
 		readonly local: StorageAreaShim;
 		readonly sync: StorageAreaShim;
 	};
+	readonly i18n?: {
+		readonly getMessage: (
+			messageName: string,
+			substitutions?: unknown,
+		) => string;
+		readonly getUILanguage: () => string;
+		readonly getAcceptLanguages: (
+			callback?: (languages: readonly string[]) => void,
+		) => Promise<readonly string[]>;
+	};
 }
 
 const LOG_TAG = "[Wirt:Content]";
 
-function logInfo(
-	...args: readonly (string | number | boolean | null | undefined | object)[]
-): void {
+function logInfo(...args: readonly unknown[]): void {
 	console.log(LOG_TAG, ...args);
 }
 
-function logWarn(
-	...args: readonly (string | number | boolean | null | undefined | object)[]
-): void {
+function logWarn(...args: readonly unknown[]): void {
 	console.warn(LOG_TAG, ...args);
 }
 
-function logError(
-	...args: readonly (string | number | boolean | null | undefined | object)[]
-): void {
+function logError(...args: readonly unknown[]): void {
 	console.error(LOG_TAG, ...args);
 }
 
@@ -110,49 +120,282 @@ function safeSendMessage<T extends NativeGenericReply>(
 	});
 }
 
+interface AmoMetadata {
+	readonly guid?: string;
+	readonly slug: string;
+	readonly name?: string;
+	readonly names?: readonly string[];
+	readonly xpiUrl?: string;
+}
+
+const amoMetadataCache = new Map<string, AmoMetadata>();
+const amoPendingFetches = new Map<string, Promise<AmoMetadata | null>>();
+
+let cachedInstalledExtensions: readonly ExtensionDescriptor[] = [];
+let hasFetchedInstalled = false;
+
+function fetchInstalledExtensions(): Promise<readonly ExtensionDescriptor[]> {
+	return safeSendMessage<NativeInstalledExtensionsReply>({
+		type: "GET_INSTALLED_EXTENSIONS",
+	}).then((res) => {
+		if (res.extensions && Array.isArray(res.extensions)) {
+			cachedInstalledExtensions = res.extensions;
+			hasFetchedInstalled = true;
+		}
+		return cachedInstalledExtensions;
+	});
+}
+
+function fetchAmoMetadata(addonSlug: string): Promise<AmoMetadata | null> {
+	const normalizedSlug = addonSlug.toLowerCase();
+	const cached = amoMetadataCache.get(normalizedSlug);
+	if (cached) {
+		return Promise.resolve(cached);
+	}
+
+	const pending = amoPendingFetches.get(normalizedSlug);
+	if (pending) {
+		return pending;
+	}
+
+	const promise = fetch(
+		`https://addons.mozilla.org/api/v5/addons/addon/${encodeURIComponent(normalizedSlug)}/`,
+	)
+		.then((res) =>
+			res.ok ? (res.json() as Promise<AmoApiResponse>) : null,
+		)
+		.then((data) => {
+			if (!data) {
+				const fallbackMeta: AmoMetadata = { slug: normalizedSlug };
+				amoMetadataCache.set(normalizedSlug, fallbackMeta);
+				return fallbackMeta;
+			}
+			let name: string | undefined;
+			let names: string[] = [];
+			if (typeof data.name === "string") {
+				name = data.name;
+				names = [data.name];
+			} else if (data.name && typeof data.name === "object") {
+				names = Object.values(data.name).filter(
+					(v): v is string => typeof v === "string",
+				);
+				name = data.name["en-US"] ?? data.name["en-GB"] ?? names[0];
+			}
+			const meta: AmoMetadata = {
+				guid: typeof data.guid === "string" ? data.guid : undefined,
+				slug:
+					typeof data.slug === "string" ? data.slug : normalizedSlug,
+				name,
+				names,
+				xpiUrl: data.current_version?.file?.url,
+			};
+			amoMetadataCache.set(normalizedSlug, meta);
+			return meta;
+		})
+		.catch((err) => {
+			const msg = err instanceof Error ? err.message : String(err);
+			logWarn("Failed to query AMO API:", msg);
+			const fallbackMeta: AmoMetadata = { slug: normalizedSlug };
+			amoMetadataCache.set(normalizedSlug, fallbackMeta);
+			return fallbackMeta;
+		})
+		.finally(() => {
+			amoPendingFetches.delete(normalizedSlug);
+		});
+
+	amoPendingFetches.set(normalizedSlug, promise);
+	return promise;
+}
+
+function findInstalledChromeExtension(
+	extId: string,
+): ExtensionDescriptor | undefined {
+	const lowerId = extId.toLowerCase();
+	return cachedInstalledExtensions.find(
+		(ext) => ext.id.toLowerCase() === lowerId,
+	);
+}
+
+function findInstalledMozillaExtension(
+	addonSlug: string,
+	meta?: AmoMetadata | null,
+): ExtensionDescriptor | undefined {
+	const targetSlug = (meta?.slug ?? addonSlug).toLowerCase();
+	const targetGuid = meta?.guid?.toLowerCase();
+	const targetNames = (meta?.names ?? (meta?.name ? [meta.name] : [])).map(
+		(n) => n.toLowerCase(),
+	);
+
+	return cachedInstalledExtensions.find((ext) => {
+		const extId = ext.id.toLowerCase();
+		const extName = ext.name.toLowerCase();
+
+		if (targetGuid && extId === targetGuid) return true;
+		if (extId === targetSlug) return true;
+		if (extId.startsWith(`${targetSlug}-`)) return true;
+		if (
+			targetNames.some(
+				(n) =>
+					extName === n || extName.includes(n) || n.includes(extName),
+			)
+		) {
+			return true;
+		}
+		return false;
+	});
+}
+
 function replaceButtonText(element: Element, newText: string): void {
-	const targetRegex =
-		/download firefox|add to firefox|available on|add to chrome|add to safari|adding to safari|added to safari/i;
-	const candidates = element.querySelectorAll("span, div, p");
-	let updated = false;
+	const htmlEl = element as HTMLElement;
+	if (htmlEl.dataset?.wirtLabel === "true") {
+		htmlEl.textContent = newText;
+		element.setAttribute("aria-label", newText);
+		return;
+	}
+
+	const tagged = element.querySelector<HTMLElement>(
+		"[data-wirt-label='true']",
+	);
+	if (tagged) {
+		tagged.textContent = newText;
+		element.setAttribute("aria-label", newText);
+		return;
+	}
+
+	const candidates = element.querySelectorAll<HTMLElement>(
+		"span, div, p, b, strong",
+	);
+	let targetNode: HTMLElement | null = null;
 
 	for (const node of candidates) {
 		const text = (node.textContent ?? "").trim();
-		if (targetRegex.test(text)) {
-			for (const child of Array.from(node.childNodes)) {
-				if (
-					child.nodeType === Node.TEXT_NODE &&
-					(child.textContent ?? "").trim().length > 0
-				) {
-					child.textContent = newText;
-					updated = true;
-					break;
-				}
-			}
-			if (!updated && node.children.length === 0) {
-				node.textContent = newText;
-				updated = true;
-				break;
-			}
+		if (text.length > 0 && node.children.length === 0) {
+			targetNode = node;
+			break;
 		}
 	}
 
-	if (!updated) {
-		for (const child of Array.from(element.childNodes)) {
+	if (!targetNode) {
+		for (const node of candidates) {
+			const text = (node.textContent ?? "").trim();
 			if (
-				child.nodeType === Node.TEXT_NODE &&
-				(child.textContent ?? "").trim().length > 0
+				text.length > 0 &&
+				!node.querySelector("svg, img, picture, canvas")
 			) {
-				child.textContent = newText;
-				updated = true;
+				targetNode = node;
 				break;
 			}
 		}
 	}
 
-	if (!updated) {
-		element.textContent = newText;
+	if (targetNode) {
+		targetNode.dataset.wirtLabel = "true";
+		targetNode.textContent = newText;
+		element.setAttribute("aria-label", newText);
+		return;
 	}
+
+	for (const child of Array.from(element.childNodes)) {
+		if (
+			child.nodeType === Node.TEXT_NODE &&
+			(child.textContent ?? "").trim().length > 0
+		) {
+			child.textContent = newText;
+			element.setAttribute("aria-label", newText);
+			return;
+		}
+	}
+
+	htmlEl.dataset.wirtLabel = "true";
+	element.textContent = newText;
+	element.setAttribute("aria-label", newText);
+}
+
+function findChromeStoreActionButton(extId: string): HTMLElement | null {
+	const bound = document.querySelectorAll<HTMLElement>(
+		"button[data-wirt-bound='true']",
+	);
+	for (const btn of Array.from(bound)) {
+		if (btn.dataset.wirtExtId === extId) {
+			return btn;
+		}
+	}
+
+	const h1 = document.querySelector<HTMLElement>("h1");
+	if (h1) {
+		let hero = h1.parentElement;
+		while (hero && hero !== document.body && hero.tagName !== "MAIN") {
+			const buttons = Array.from(
+				hero.querySelectorAll<HTMLElement>("button"),
+			);
+			const actionBtn = buttons.find((btn) => {
+				if (btn.dataset.wirtBound === "true") return true;
+				if (
+					btn.closest(
+						"header, nav, [role='banner'], [role='navigation'], [role='tablist']",
+					)
+				) {
+					return false;
+				}
+				if (
+					btn.getAttribute("role") === "tab" ||
+					btn.getAttribute("aria-haspopup") === "menu" ||
+					btn.getAttribute("aria-haspopup") === "dialog"
+				) {
+					return false;
+				}
+				if (btn.querySelector("svg")) {
+					return false;
+				}
+				const text = (btn.textContent ?? "").trim();
+				return text.length > 0;
+			});
+			if (actionBtn) {
+				return actionBtn;
+			}
+			hero = hero.parentElement;
+		}
+	}
+
+	const main = document.querySelector<HTMLElement>("main");
+	if (main) {
+		const candidates = Array.from(
+			main.querySelectorAll<HTMLElement>("button"),
+		).filter((btn) => {
+			if (btn.dataset.wirtBound === "true") return true;
+			if (
+				btn.closest(
+					"header, nav, [role='banner'], [role='navigation'], [role='tablist']",
+				)
+			) {
+				return false;
+			}
+			if (
+				btn.getAttribute("role") === "tab" ||
+				btn.getAttribute("aria-haspopup") === "menu" ||
+				btn.getAttribute("aria-haspopup") === "dialog"
+			) {
+				return false;
+			}
+			if (btn.querySelector("svg")) {
+				return false;
+			}
+			return (btn.textContent ?? "").trim().length > 0;
+		});
+		const disabled = candidates.find(
+			(b) =>
+				b.hasAttribute("disabled") ||
+				b.getAttribute("aria-disabled") === "true",
+		);
+		if (disabled) {
+			return disabled;
+		}
+		if (candidates.length === 1) {
+			return candidates[0] ?? null;
+		}
+	}
+
+	return null;
 }
 
 function hookChromeWebStore(): void {
@@ -163,73 +406,153 @@ function hookChromeWebStore(): void {
 		return;
 	}
 
-	const extId = match[1];
-	const crxUrl = `https://clients2.google.com/service/update2/crx?response=redirect&os=mac&arch=arm64&os_arch=arm64&nacl_arch=arm&prod=chromecrx&prodchannel=stable&prodversion=130.0.0.0&acceptformat=crx3,puff&x=id%3D${extId}%26installsource%3Dondemand%26uc`;
+	const extId = match[1].toLowerCase();
+	const targetBtn = findChromeStoreActionButton(extId);
 
-	const buttons = document.querySelectorAll<HTMLElement>(
-		"button, [role='button'], div[ccl-id] button",
-	);
-	for (const btn of buttons) {
-		const text = (btn.textContent ?? "").trim();
-		if (
-			/available on chrome/i.test(text) ||
-			/add to chrome/i.test(text) ||
-			/available on/i.test(text)
-		) {
-			if (btn.dataset.hostHooked === extId) {
-				continue;
-			}
-			btn.dataset.hostHooked = extId;
-
-			logInfo("Hooking Chrome Web Store button for extension:", extId);
-			replaceButtonText(btn, "Add to Safari");
-			btn.removeAttribute("disabled");
-			btn.setAttribute("aria-disabled", "false");
-			btn.style.pointerEvents = "auto";
-			btn.style.cursor = "pointer";
-
-			btn.addEventListener(
-				"click",
-				(e: MouseEvent) => {
-					e.preventDefault();
-					e.stopPropagation();
-					e.stopImmediatePropagation();
-
-					logInfo(
-						"User clicked Add to Safari for Chrome extension:",
-						extId,
-					);
-					replaceButtonText(btn, "Adding to Safari…");
-					btn.style.pointerEvents = "none";
-
-					void safeSendMessage<NativeInstallPackageReply>({
-						type: "INSTALL_PACKAGE_FROM_URL",
-						downloadUrl: crxUrl,
-						referrer: window.location.href,
-					}).then((res) => {
-						if (res.status === "success") {
-							logInfo(
-								"Chrome extension installation succeeded:",
-								res,
-							);
-							replaceButtonText(btn, "Added to Safari ✓");
-						} else {
-							logError(
-								"Chrome extension installation failed:",
-								res,
-							);
-							replaceButtonText(btn, "Installation Failed ✕");
-							setTimeout(() => {
-								replaceButtonText(btn, "Add to Safari");
-								btn.style.pointerEvents = "auto";
-							}, 3000);
-						}
-					});
-				},
-				true,
-			);
-		}
+	if (!targetBtn) {
+		return;
 	}
+
+	const installedExt = findInstalledChromeExtension(extId);
+	const isInstalled = Boolean(installedExt);
+
+	targetBtn.removeAttribute("disabled");
+	targetBtn.setAttribute("aria-disabled", "false");
+	targetBtn.style.pointerEvents = "auto";
+	targetBtn.style.cursor = "pointer";
+
+	if (targetBtn.dataset.wirtExtId && targetBtn.dataset.wirtExtId !== extId) {
+		targetBtn.dataset.wirtBound = "false";
+		targetBtn.dataset.wirtState = "";
+	}
+	targetBtn.dataset.wirtExtId = extId;
+
+	if (targetBtn.dataset.wirtBusy === "true") {
+		return;
+	}
+
+	const desiredState = isInstalled ? "installed" : "not_installed";
+	if (targetBtn.dataset.wirtState !== desiredState) {
+		targetBtn.dataset.wirtState = desiredState;
+		replaceButtonText(targetBtn, isInstalled ? "Remove" : "Add to Safari");
+	}
+
+	if (targetBtn.dataset.wirtBound === "true") {
+		return;
+	}
+	targetBtn.dataset.wirtBound = "true";
+
+	logInfo("Hooking Chrome Web Store button for extension:", extId);
+
+	targetBtn.addEventListener(
+		"click",
+		(e: MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+
+			if (targetBtn.dataset.wirtBusy === "true") {
+				return;
+			}
+
+			const currentMatch = window.location.pathname.match(
+				/\/detail\/(?:[^\/]+\/)?([a-z0-9]{32})/i,
+			);
+			const currentExtId =
+				currentMatch && currentMatch[1]
+					? currentMatch[1].toLowerCase()
+					: extId;
+			const currentInstalled = findInstalledChromeExtension(currentExtId);
+
+			if (
+				targetBtn.dataset.wirtState === "installed" ||
+				currentInstalled
+			) {
+				targetBtn.dataset.wirtBusy = "true";
+				targetBtn.style.pointerEvents = "none";
+				replaceButtonText(targetBtn, "Removing…");
+				logInfo(
+					"User clicked Remove for Chrome extension:",
+					currentExtId,
+				);
+
+				const targetIdToRemove = currentInstalled?.id ?? currentExtId;
+				void safeSendMessage<NativeUninstallPackageReply>({
+					type: "UNINSTALL_PACKAGE",
+					extensionId: targetIdToRemove,
+				}).then((res) => {
+					if (res.status === "success") {
+						logInfo(
+							"Chrome extension removal succeeded:",
+							currentExtId,
+						);
+						cachedInstalledExtensions =
+							cachedInstalledExtensions.filter(
+								(ext) =>
+									ext.id.toLowerCase() !==
+									targetIdToRemove.toLowerCase(),
+							);
+						replaceButtonText(targetBtn, "Removed ✓");
+						setTimeout(() => {
+							targetBtn.dataset.wirtState = "not_installed";
+							targetBtn.dataset.wirtBusy = "false";
+							replaceButtonText(targetBtn, "Add to Safari");
+							targetBtn.style.pointerEvents = "auto";
+						}, 1000);
+					} else {
+						logError("Chrome extension removal failed:", res);
+						replaceButtonText(targetBtn, "Removal Failed ✕");
+						setTimeout(() => {
+							targetBtn.dataset.wirtBusy = "false";
+							replaceButtonText(targetBtn, "Remove");
+							targetBtn.style.pointerEvents = "auto";
+						}, 2000);
+					}
+				});
+			} else {
+				targetBtn.dataset.wirtBusy = "true";
+				targetBtn.style.pointerEvents = "none";
+				replaceButtonText(targetBtn, "Adding to Safari…");
+				logInfo(
+					"User clicked Add to Safari for Chrome extension:",
+					currentExtId,
+				);
+
+				const currentCrxUrl = `https://clients2.google.com/service/update2/crx?response=redirect&os=mac&arch=arm64&os_arch=arm64&nacl_arch=arm&prod=chromecrx&prodchannel=stable&prodversion=130.0.0.0&acceptformat=crx3,puff&x=id%3D${currentExtId}%26installsource%3Dondemand%26uc`;
+
+				void safeSendMessage<NativeInstallPackageReply>({
+					type: "INSTALL_PACKAGE_FROM_URL",
+					downloadUrl: currentCrxUrl,
+					referrer: window.location.href,
+				}).then((res) => {
+					if (res.status === "success") {
+						logInfo(
+							"Chrome extension installation succeeded:",
+							res,
+						);
+						replaceButtonText(targetBtn, "Added to Safari ✓");
+						void fetchInstalledExtensions().then(() => {
+							setTimeout(() => {
+								targetBtn.dataset.wirtState = "installed";
+								targetBtn.dataset.wirtBusy = "false";
+								replaceButtonText(targetBtn, "Remove");
+								targetBtn.style.pointerEvents = "auto";
+							}, 1200);
+						});
+					} else {
+						logError("Chrome extension installation failed:", res);
+						replaceButtonText(targetBtn, "Installation Failed ✕");
+						setTimeout(() => {
+							targetBtn.dataset.wirtBusy = "false";
+							replaceButtonText(targetBtn, "Add to Safari");
+							targetBtn.style.pointerEvents = "auto";
+						}, 2500);
+					}
+				});
+			}
+		},
+		true,
+	);
 }
 
 function hookMozillaAddons(): void {
@@ -238,124 +561,249 @@ function hookMozillaAddons(): void {
 		return;
 	}
 
-	const addonSlug = match[1];
-	const candidates = document.querySelectorAll<HTMLElement>(
-		"a, button, [role='button'], .Button--action, .InstallButtonWrapper-download-button",
-	);
-
-	for (const el of candidates) {
-		const text = (el.textContent ?? "").trim();
-		const href = el.getAttribute("href") ?? "";
-		const isAmoButton =
-			/download firefox/i.test(text) ||
-			/add to firefox/i.test(text) ||
-			href.includes("mozilla.org/firefox/new");
-
-		if (isAmoButton) {
-			if (el.dataset.hostHooked === addonSlug) {
-				continue;
-			}
-			el.dataset.hostHooked = addonSlug;
-
-			logInfo("Hooking Mozilla Add-on button for slug:", addonSlug);
-			replaceButtonText(el, "Add to Safari");
-			el.removeAttribute("target");
-			el.style.cursor = "pointer";
-
-			el.addEventListener(
-				"click",
-				(e: MouseEvent) => {
-					e.preventDefault();
-					e.stopPropagation();
-					e.stopImmediatePropagation();
-
-					logInfo(
-						"User clicked Add to Safari for Mozilla add-on:",
-						addonSlug,
-					);
-					replaceButtonText(el, "Adding to Safari…");
-					el.style.pointerEvents = "none";
-
-					let xpiUrl: string | null = null;
-					const directAnchor =
-						document.querySelector<HTMLAnchorElement>(
-							'a[href*="/firefox/downloads/file/"]',
-						);
-					if (directAnchor && directAnchor.href) {
-						xpiUrl = directAnchor.href;
-					}
-
-					const fetchUrlPromise: Promise<string> = xpiUrl
-						? Promise.resolve(xpiUrl)
-						: fetch(
-								`https://addons.mozilla.org/api/v5/addons/addon/${addonSlug}/`,
-							)
-								.then((apiRes) =>
-									apiRes.ok
-										? (apiRes.json() as Promise<AmoApiResponse>)
-										: null,
-								)
-								.then(
-									(apiData) =>
-										apiData?.current_version?.file?.url ??
-										`https://addons.mozilla.org/firefox/downloads/latest/${addonSlug}/latest.xpi`,
-								)
-								.catch((fetchErr) => {
-									const msg =
-										fetchErr instanceof Error
-											? fetchErr.message
-											: String(fetchErr);
-									logWarn("Failed to query AMO API:", msg);
-									return `https://addons.mozilla.org/firefox/downloads/latest/${addonSlug}/latest.xpi`;
-								});
-
-					void fetchUrlPromise.then((resolvedUrl) => {
-						logInfo("Dispatched XPI download URL:", resolvedUrl);
-						return safeSendMessage<NativeInstallPackageReply>({
-							type: "INSTALL_PACKAGE_FROM_URL",
-							downloadUrl: resolvedUrl,
-							referrer: window.location.href,
-						}).then((res) => {
-							if (res.status === "success") {
-								logInfo(
-									"Mozilla add-on installation succeeded:",
-									res,
-								);
-								replaceButtonText(el, "Added to Safari ✓");
-							} else {
-								logError(
-									"Mozilla add-on installation failed:",
-									res,
-								);
-								replaceButtonText(el, "Installation Failed ✕");
-								setTimeout(() => {
-									replaceButtonText(el, "Add to Safari");
-									el.style.pointerEvents = "auto";
-								}, 3000);
-							}
-						});
-					});
-				},
-				true,
-			);
-		}
+	const addonSlug = decodeURIComponent(match[1]).toLowerCase();
+	const meta = amoMetadataCache.get(addonSlug);
+	if (!meta && !amoPendingFetches.has(addonSlug)) {
+		void fetchAmoMetadata(addonSlug).then(() => {
+			hookMozillaAddons();
+		});
 	}
 
-	const notices = document.querySelectorAll<HTMLElement>(
-		".Notice-warning, .AMOPromotion",
+	const installedExt = findInstalledMozillaExtension(addonSlug, meta);
+	const isInstalled = Boolean(installedExt);
+
+	const noticeLinks = document.querySelectorAll<HTMLElement>(
+		".Notice a[href*='firefox/new'], .Notice a[href*='firefox.com']",
 	);
-	for (const notice of notices) {
-		if (/need firefox|download firefox/i.test(notice.textContent ?? "")) {
+	for (const link of noticeLinks) {
+		const notice = link.closest<HTMLElement>(".Notice");
+		if (notice) {
 			notice.style.display = "none";
 		}
 	}
+
+	const wrapper = document.querySelector<HTMLElement>(
+		".InstallButtonWrapper",
+	);
+	if (!wrapper) {
+		return;
+	}
+
+	const secondaryDl = wrapper.querySelector<HTMLElement>(
+		".InstallButtonWrapper-download",
+	);
+	if (secondaryDl) {
+		secondaryDl.style.display = "none";
+	}
+
+	const targetBtn = wrapper.querySelector<HTMLElement>(
+		"a.Button, button.Button, .GetFirefoxButton a, .AMOPackageInstallButton, a, button",
+	);
+	if (!targetBtn) {
+		return;
+	}
+
+	targetBtn.removeAttribute("disabled");
+	targetBtn.setAttribute("aria-disabled", "false");
+	targetBtn.removeAttribute("target");
+	targetBtn.style.pointerEvents = "auto";
+	targetBtn.style.cursor = "pointer";
+
+	if (
+		targetBtn.dataset.wirtSlug &&
+		targetBtn.dataset.wirtSlug !== addonSlug
+	) {
+		targetBtn.dataset.wirtBound = "false";
+		targetBtn.dataset.wirtState = "";
+	}
+	targetBtn.dataset.wirtSlug = addonSlug;
+
+	if (targetBtn.dataset.wirtBusy === "true") {
+		return;
+	}
+
+	const desiredState = isInstalled ? "installed" : "not_installed";
+	if (targetBtn.dataset.wirtState !== desiredState) {
+		targetBtn.dataset.wirtState = desiredState;
+		replaceButtonText(targetBtn, isInstalled ? "Remove" : "Add to Safari");
+	}
+
+	if (targetBtn.dataset.wirtBound === "true") {
+		return;
+	}
+	targetBtn.dataset.wirtBound = "true";
+
+	logInfo("Hooking Mozilla Add-on button for slug:", addonSlug);
+
+	targetBtn.addEventListener(
+		"click",
+		(e: MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+
+			if (targetBtn.dataset.wirtBusy === "true") {
+				return;
+			}
+
+			const currentMatch =
+				window.location.pathname.match(/\/addon\/([^\/]+)/i);
+			const currentSlug =
+				currentMatch && currentMatch[1]
+					? decodeURIComponent(currentMatch[1]).toLowerCase()
+					: addonSlug;
+			const currentMeta = amoMetadataCache.get(currentSlug) ?? meta;
+			const currentInstalled = findInstalledMozillaExtension(
+				currentSlug,
+				currentMeta,
+			);
+
+			if (
+				targetBtn.dataset.wirtState === "installed" ||
+				currentInstalled
+			) {
+				targetBtn.dataset.wirtBusy = "true";
+				targetBtn.style.pointerEvents = "none";
+				replaceButtonText(targetBtn, "Removing…");
+				logInfo("User clicked Remove for Mozilla add-on:", currentSlug);
+
+				const targetIdToRemove =
+					currentInstalled?.id ?? currentMeta?.guid ?? currentSlug;
+				void safeSendMessage<NativeUninstallPackageReply>({
+					type: "UNINSTALL_PACKAGE",
+					extensionId: targetIdToRemove,
+				}).then((res) => {
+					if (res.status === "success") {
+						logInfo(
+							"Mozilla add-on removal succeeded:",
+							currentSlug,
+						);
+						cachedInstalledExtensions =
+							cachedInstalledExtensions.filter(
+								(ext) =>
+									ext.id.toLowerCase() !==
+									targetIdToRemove.toLowerCase(),
+							);
+						replaceButtonText(targetBtn, "Removed ✓");
+						setTimeout(() => {
+							targetBtn.dataset.wirtState = "not_installed";
+							targetBtn.dataset.wirtBusy = "false";
+							replaceButtonText(targetBtn, "Add to Safari");
+							targetBtn.style.pointerEvents = "auto";
+						}, 1000);
+					} else {
+						logError("Mozilla add-on removal failed:", res);
+						replaceButtonText(targetBtn, "Removal Failed ✕");
+						setTimeout(() => {
+							targetBtn.dataset.wirtBusy = "false";
+							replaceButtonText(targetBtn, "Remove");
+							targetBtn.style.pointerEvents = "auto";
+						}, 2000);
+					}
+				});
+			} else {
+				targetBtn.dataset.wirtBusy = "true";
+				targetBtn.style.pointerEvents = "none";
+				replaceButtonText(targetBtn, "Adding to Safari…");
+				logInfo(
+					"User clicked Add to Safari for Mozilla add-on:",
+					currentSlug,
+				);
+
+				let xpiUrl: string | null = null;
+				const directAnchor =
+					wrapper.querySelector<HTMLAnchorElement>(
+						".InstallButtonWrapper-download-link",
+					) ??
+					document.querySelector<HTMLAnchorElement>(
+						'a[href*="/firefox/downloads/file/"]',
+					);
+				if (directAnchor && directAnchor.href) {
+					xpiUrl = directAnchor.href;
+				}
+
+				const fetchUrlPromise: Promise<string> = xpiUrl
+					? Promise.resolve(xpiUrl)
+					: fetchAmoMetadata(currentSlug).then(
+							(fetchedMeta) =>
+								fetchedMeta?.xpiUrl ??
+								`https://addons.mozilla.org/firefox/downloads/latest/${encodeURIComponent(currentSlug)}/latest.xpi`,
+						);
+
+				void fetchUrlPromise.then((resolvedUrl) => {
+					logInfo("Dispatched XPI download URL:", resolvedUrl);
+					return safeSendMessage<NativeInstallPackageReply>({
+						type: "INSTALL_PACKAGE_FROM_URL",
+						downloadUrl: resolvedUrl,
+						referrer: window.location.href,
+					}).then((res) => {
+						if (res.status === "success") {
+							logInfo(
+								"Mozilla add-on installation succeeded:",
+								res,
+							);
+							replaceButtonText(targetBtn, "Added to Safari ✓");
+							void fetchInstalledExtensions().then(() => {
+								setTimeout(() => {
+									targetBtn.dataset.wirtState = "installed";
+									targetBtn.dataset.wirtBusy = "false";
+									replaceButtonText(targetBtn, "Remove");
+									targetBtn.style.pointerEvents = "auto";
+								}, 1200);
+							});
+						} else {
+							logError(
+								"Mozilla add-on installation failed:",
+								res,
+							);
+							replaceButtonText(
+								targetBtn,
+								"Installation Failed ✕",
+							);
+							setTimeout(() => {
+								targetBtn.dataset.wirtBusy = "false";
+								replaceButtonText(targetBtn, "Add to Safari");
+								targetBtn.style.pointerEvents = "auto";
+							}, 2500);
+						}
+					});
+				});
+			}
+		},
+		true,
+	);
 }
 
 function hookStorefronts(): void {
+	if (window.top !== window) {
+		return;
+	}
+
 	const host = window.location.hostname;
 	if (host !== "chromewebstore.google.com" && host !== "addons.mozilla.org") {
 		return;
 	}
+
+	let scanDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	function triggerScan(): void {
+		if (scanDebounceTimer !== null) {
+			clearTimeout(scanDebounceTimer);
+		}
+		scanDebounceTimer = setTimeout(() => {
+			scanDebounceTimer = null;
+			scanAndHook();
+		}, 120);
+	}
+
+	void fetchInstalledExtensions().then(() => {
+		triggerScan();
+	});
+
+	window.addEventListener("focus", () => {
+		void fetchInstalledExtensions().then(() => {
+			triggerScan();
+		});
+	});
 
 	function scanAndHook(): void {
 		if (window.location.hostname === "chromewebstore.google.com") {
@@ -368,7 +816,7 @@ function hookStorefronts(): void {
 	scanAndHook();
 
 	const observer = new MutationObserver(() => {
-		scanAndHook();
+		triggerScan();
 	});
 
 	const rootElement = document.documentElement || document.body;
@@ -424,7 +872,7 @@ function createShim(extensionId: string): ScopedShim {
 		runtime: {
 			id: extensionId,
 			sendMessage: (
-				payload: Record<string, string | number | boolean | null>,
+				payload: unknown,
 				callback?: (res: NativeGenericReply) => void,
 			) => {
 				logInfo(
@@ -451,6 +899,15 @@ function createShim(extensionId: string): ScopedShim {
 			local: makeStorageArea("local"),
 			sync: makeStorageArea("sync"),
 		},
+		i18n: {
+			getMessage: (_messageName: string) => "",
+			getUILanguage: () => navigator.language || "en",
+			getAcceptLanguages: (cb) => {
+				const langs = Array.from(navigator.languages || ["en"]);
+				if (typeof cb === "function") cb(langs);
+				return Promise.resolve(langs);
+			},
+		},
 	};
 
 	function makeStorageArea(area: "local" | "sync"): StorageAreaShim {
@@ -461,19 +918,19 @@ function createShim(extensionId: string): ScopedShim {
 					extensionId,
 					area,
 					keys,
-				}).then((res) => ((res as { data?: Record<string, unknown> }).data ?? {}));
+				}).then(
+					(res) =>
+						(res as { data?: Record<string, unknown> }).data ?? {},
+				);
 				if (cb) {
 					promise.then(cb);
 				}
 				return promise;
 			},
 			set: (items, cb) => {
-				const promise = safeSendMessage<{ readonly status: "success" }>({
-					type: "STORAGE_SET",
-					extensionId,
-					area,
-					items,
-				});
+				const promise = safeSendMessage<{ readonly status: "success" }>(
+					{ type: "STORAGE_SET", extensionId, area, items },
+				);
 				if (cb) {
 					promise.then(cb);
 				}
@@ -481,23 +938,23 @@ function createShim(extensionId: string): ScopedShim {
 			},
 			remove: (keys, cb) => {
 				const keyList = Array.isArray(keys) ? keys : [keys];
-				const promise = safeSendMessage<{ readonly status: "success" }>({
-					type: "STORAGE_REMOVE",
-					extensionId,
-					area,
-					keys: keyList,
-				});
+				const promise = safeSendMessage<{ readonly status: "success" }>(
+					{
+						type: "STORAGE_REMOVE",
+						extensionId,
+						area,
+						keys: keyList,
+					},
+				);
 				if (cb) {
 					promise.then(cb);
 				}
 				return promise;
 			},
 			clear: (cb) => {
-				const promise = safeSendMessage<{ readonly status: "success" }>({
-					type: "STORAGE_CLEAR",
-					extensionId,
-					area,
-				});
+				const promise = safeSendMessage<{ readonly status: "success" }>(
+					{ type: "STORAGE_CLEAR", extensionId, area },
+				);
 				if (cb) {
 					promise.then(cb);
 				}
