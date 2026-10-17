@@ -4,286 +4,289 @@ import SafariServices
 import SwiftUI
 
 enum WindowMetrics {
-  static let windowWidth: CGFloat = 440
+	static let windowWidth: CGFloat = 440
 }
 
 struct ContentHeightPreferenceKey: PreferenceKey {
-  static var defaultValue: CGFloat = 0
+	static var defaultValue: CGFloat = 0
 
-  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-    let next = nextValue()
-    if next > 0 {
-      value = next
-    }
-  }
+	static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+		let next = nextValue()
+		if next > 0 {
+			value = next
+		}
+	}
 }
 
 @MainActor
 final class AppState: ObservableObject {
-  static let shared = AppState()
+	static let shared = AppState()
 
-  @Published var isExtensionEnabled = false
-  @Published var installedExtensions: [InstalledExtensionItem] = []
+	@Published var isExtensionEnabled = false
+	@Published var installedExtensions: [InstalledExtensionItem] = []
 
-  private let extensionBundleId = "de.easonwong.Wirt.Extension"
+	private let extensionBundleId = "de.easonwong.Wirt.Extension"
 
-  init() {
-    loadInstalledExtensions()
-    checkExtensionState()
-  }
+	init() {
+		loadInstalledExtensions()
+		checkExtensionState()
+	}
 
-  func checkExtensionState() {
-    SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleId) {
-      state, error in
-      Task { @MainActor in
-        if let state = state {
-          if self.isExtensionEnabled != state.isEnabled {
-            self.isExtensionEnabled = state.isEnabled
-          }
-        } else if error != nil {
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            SFSafariExtensionManager.getStateOfSafariExtension(
-              withIdentifier: self.extensionBundleId
-            ) { retryState, _ in
-              if let retryState = retryState {
-                Task { @MainActor in
-                  if self.isExtensionEnabled != retryState.isEnabled {
-                    self.isExtensionEnabled = retryState.isEnabled
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+	func checkExtensionState() {
+		SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleId) {
+			state, error in
+			Task { @MainActor in
+				if let state = state {
+					if self.isExtensionEnabled != state.isEnabled {
+						self.isExtensionEnabled = state.isEnabled
+					}
+				} else if error != nil {
+					DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+						SFSafariExtensionManager.getStateOfSafariExtension(
+							withIdentifier: self.extensionBundleId
+						) { retryState, _ in
+							if let retryState = retryState {
+								Task { @MainActor in
+									if self.isExtensionEnabled != retryState.isEnabled {
+										self.isExtensionEnabled = retryState.isEnabled
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
-  func loadInstalledExtensions() {
-    let storageDir = ExtensionInstaller.shared.storageDirectory
-    guard
-      let items = try? FileManager.default.contentsOfDirectory(
-        at: storageDir, includingPropertiesForKeys: nil)
-    else {
-      installedExtensions = []
-      return
-    }
+	func loadInstalledExtensions() {
+		let storageDir = ExtensionInstaller.shared.storageDirectory
+		guard
+			let items = try? FileManager.default.contentsOfDirectory(
+				at: storageDir, includingPropertiesForKeys: nil)
+		else {
+			installedExtensions = []
+			return
+		}
 
-    var loaded: [InstalledExtensionItem] = []
-    for item in items where item.hasDirectoryPath {
-      if let desc = try? ExtensionInstaller.shared.parseManifest(
-        in: item, fallbackId: item.lastPathComponent)
-      {
-        loaded.append(
-          InstalledExtensionItem(
-            id: desc.id,
-            name: desc.name,
-            description: desc.description,
-            version: desc.version,
-            iconUrl: desc.iconUrl))
-      }
-    }
-    installedExtensions = loaded
-  }
+		var loaded: [InstalledExtensionItem] = []
+		for item in items where item.hasDirectoryPath {
+			if let desc = try? ExtensionInstaller.shared.parseManifest(
+				in: item, fallbackId: item.lastPathComponent)
+			{
+				loaded.append(
+					InstalledExtensionItem(
+						id: desc.id,
+						name: desc.name,
+						description: desc.description,
+						version: desc.version,
+						iconUrl: desc.iconUrl))
+			}
+		}
+		installedExtensions = loaded
+	}
 
-  func openSafariExtensionSettings() {
-    SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleId)
-  }
+	func openSafariExtensionSettings() {
+		SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleId)
+	}
 }
 
 struct ContentView: View {
-  @ObservedObject private var state = AppState.shared
-  var onHeightChange: ((CGFloat) -> Void)?
+	@ObservedObject private var state = AppState.shared
+	var onHeightChange: ((CGFloat) -> Void)?
 
-  var body: some View {
-    VStack(spacing: 0) {
-      if state.isExtensionEnabled {
-        activeView
-      } else {
-        inactiveView
-      }
-    }
-    .padding(.horizontal, 24)
-    .padding(.bottom, 20)
-    .padding(.top, 38)
-    .fixedSize(horizontal: false, vertical: true)
-    .background(
-      GeometryReader { geometry in
-        Color.clear.preference(
-          key: ContentHeightPreferenceKey.self,
-          value: geometry.size.height
-        )
-      }
-    )
-    .frame(width: WindowMetrics.windowWidth)
-    .onPreferenceChange(ContentHeightPreferenceKey.self) { newHeight in
-      guard newHeight > 0 else { return }
-      DispatchQueue.main.async {
-        onHeightChange?(newHeight)
-      }
-    }
-    .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
-      state.checkExtensionState()
-      state.loadInstalledExtensions()
-    }
-  }
+	var body: some View {
+		VStack(spacing: 0) {
+			if state.isExtensionEnabled {
+				activeView
+			} else {
+				inactiveView
+			}
+		}
+		.padding(.horizontal, 24)
+		.padding(.bottom, 20)
+		.padding(.top, 38)
+		.fixedSize(horizontal: false, vertical: true)
+		.background(
+			GeometryReader { geometry in
+				Color.clear.preference(
+					key: ContentHeightPreferenceKey.self,
+					value: geometry.size.height
+				)
+			}
+		)
+		.frame(width: WindowMetrics.windowWidth)
+		.onPreferenceChange(ContentHeightPreferenceKey.self) { newHeight in
+			guard newHeight > 0 else { return }
+			DispatchQueue.main.async {
+				onHeightChange?(newHeight)
+			}
+		}
+		.onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) {
+			_ in
+			state.checkExtensionState()
+			state.loadInstalledExtensions()
+		}
+	}
 
-  private var inactiveView: some View {
-    VStack(spacing: 16) {
-      VStack(spacing: 10) {
-        Image(systemName: "puzzlepiece.extension")
-          .font(.system(size: 40))
-          .foregroundStyle(.secondary)
+	private var inactiveView: some View {
+		VStack(spacing: 16) {
+			VStack(spacing: 10) {
+				Image(systemName: "puzzlepiece.extension")
+					.font(.system(size: 40))
+					.foregroundStyle(.secondary)
 
-        HStack(spacing: 6) {
-          Circle()
-            .fill(Color.red)
-            .frame(width: 7, height: 7)
+				HStack(spacing: 6) {
+					Circle()
+						.fill(Color.red)
+						.frame(width: 7, height: 7)
 
-          Text("Extension Not Enabled")
-            .font(.system(size: 13, weight: .semibold))
+					Text("Extension Not Enabled")
+						.font(.system(size: 13, weight: .semibold))
 
-          Button {
-            state.checkExtensionState()
-          } label: {
-            Image(systemName: "arrow.clockwise")
-              .font(.system(size: 11, weight: .medium))
-          }
-          .buttonStyle(.plain)
-          .help("Refresh extension status")
-        }
-      }
-      .frame(maxWidth: .infinity)
+					Button {
+						state.checkExtensionState()
+					} label: {
+						Image(systemName: "arrow.clockwise")
+							.font(.system(size: 11, weight: .medium))
+					}
+					.buttonStyle(.plain)
+					.help("Refresh extension status")
+				}
+			}
+			.frame(maxWidth: .infinity)
 
-      VStack(alignment: .leading, spacing: 6) {
-        instructionLine(
-          number: "1.",
-          text: "In Safari Settings > Advanced, tick \"Show features for web developers\".")
-        instructionLine(
-          number: "2.",
-          text: "In Safari Develop menu, select \"Allow Unsigned Extensions\".")
-        instructionLine(
-          number: "3.",
-          text: "In Safari Settings > Extensions, tick \"Wirt\".")
-        instructionLine(
-          number: "4.",
-          text: "Select \"Always Allow on Every Website…\".")
-      }
-      .font(.system(size: 11))
-      .foregroundStyle(.secondary)
-      .padding(.vertical, 10)
-      .padding(.horizontal, 16)
-      .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
-      .clipShape(RoundedRectangle(cornerRadius: 8))
+			VStack(alignment: .leading, spacing: 6) {
+				instructionLine(
+					number: "1.",
+					text:
+						"In Safari Settings > Advanced, tick \"Show features for web developers\".")
+				instructionLine(
+					number: "2.",
+					text: "In Safari Develop menu, select \"Allow Unsigned Extensions\".")
+				instructionLine(
+					number: "3.",
+					text: "In Safari Settings > Extensions, tick \"Wirt\".")
+				instructionLine(
+					number: "4.",
+					text: "Select \"Always Allow on Every Website…\".")
+			}
+			.font(.system(size: 11))
+			.foregroundStyle(.secondary)
+			.padding(.vertical, 10)
+			.padding(.horizontal, 16)
+			.background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
 
-      Button("Open Safari Settings") {
-        state.openSafariExtensionSettings()
-      }
-    }
-    .frame(maxWidth: .infinity)
-  }
+			Button("Open Safari Settings") {
+				state.openSafariExtensionSettings()
+			}
+		}
+		.frame(maxWidth: .infinity)
+	}
 
-  private func instructionLine(number: String, text: String) -> some View {
-    HStack(alignment: .top, spacing: 6) {
-      Text(number)
-        .fontWeight(.medium)
-      Text(text)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-  }
+	private func instructionLine(number: String, text: String) -> some View {
+		HStack(alignment: .top, spacing: 6) {
+			Text(number)
+				.fontWeight(.medium)
+			Text(text)
+				.fixedSize(horizontal: false, vertical: true)
+		}
+	}
 
-  private var activeView: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Installed Extensions")
-        .font(.system(size: 13, weight: .semibold))
+	private var activeView: some View {
+		VStack(alignment: .leading, spacing: 12) {
+			Text("Installed Extensions")
+				.font(.system(size: 13, weight: .semibold))
 
-      if state.installedExtensions.isEmpty {
-        VStack(spacing: 12) {
-          Image(systemName: "puzzlepiece.extension")
-            .font(.system(size: 40))
-            .foregroundColor(.secondary)
+			if state.installedExtensions.isEmpty {
+				VStack(spacing: 12) {
+					Image(systemName: "puzzlepiece.extension")
+						.font(.system(size: 40))
+						.foregroundColor(.secondary)
 
-          VStack(spacing: 4) {
-            Text("No Extensions Installed")
-              .font(.system(size: 13, weight: .semibold))
-            Text("Download a .crx or .xpi package in Safari to install.")
-              .font(.system(size: 11))
-              .foregroundStyle(.secondary)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 200)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color(NSColor.separatorColor).opacity(0.7), lineWidth: 1)
-        )
-      } else {
-        ScrollView {
-          LazyVStack(spacing: 0) {
-            ForEach(state.installedExtensions) { ext in
-              HStack(spacing: 12) {
-                if let iconUrl = ext.iconUrl,
-                  let commaIndex = iconUrl.firstIndex(of: ","),
-                  let data = Data(
-                    base64Encoded: String(iconUrl[iconUrl.index(after: commaIndex)...])),
-                  let nsImage = NSImage(data: data)
-                {
-                  Image(nsImage: nsImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 20, height: 20)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                } else {
-                  Image(systemName: "puzzlepiece.extension.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.accentColor)
-                }
+					VStack(spacing: 4) {
+						Text("No Extensions Installed")
+							.font(.system(size: 13, weight: .semibold))
+						Text("Download a .crx or .xpi package in Safari to install.")
+							.font(.system(size: 11))
+							.foregroundStyle(.secondary)
+					}
+				}
+				.frame(maxWidth: .infinity)
+				.frame(height: 200)
+				.background(Color(NSColor.controlBackgroundColor).opacity(0.3))
+				.clipShape(RoundedRectangle(cornerRadius: 8))
+				.overlay(
+					RoundedRectangle(cornerRadius: 8)
+						.stroke(Color(NSColor.separatorColor).opacity(0.7), lineWidth: 1)
+				)
+			} else {
+				ScrollView {
+					LazyVStack(spacing: 0) {
+						ForEach(state.installedExtensions) { ext in
+							HStack(spacing: 12) {
+								if let iconUrl = ext.iconUrl,
+									let commaIndex = iconUrl.firstIndex(of: ","),
+									let data = Data(
+										base64Encoded: String(
+											iconUrl[iconUrl.index(after: commaIndex)...])),
+									let nsImage = NSImage(data: data)
+								{
+									Image(nsImage: nsImage)
+										.resizable()
+										.aspectRatio(contentMode: .fit)
+										.frame(width: 20, height: 20)
+										.clipShape(RoundedRectangle(cornerRadius: 4))
+								} else {
+									Image(systemName: "puzzlepiece.extension.fill")
+										.font(.system(size: 18))
+										.foregroundStyle(Color.accentColor)
+								}
 
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(ext.name)
-                    .font(.system(size: 13, weight: .medium))
-                  if !ext.description.isEmpty {
-                    Text(ext.description)
-                      .font(.system(size: 11))
-                      .foregroundStyle(.secondary)
-                      .lineLimit(2)
-                  }
-                  Text("v\(ext.version)")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
-                }
+								VStack(alignment: .leading, spacing: 2) {
+									Text(ext.name)
+										.font(.system(size: 13, weight: .medium))
+									if !ext.description.isEmpty {
+										Text(ext.description)
+											.font(.system(size: 11))
+											.foregroundStyle(.secondary)
+											.lineLimit(2)
+									}
+									Text("v\(ext.version)")
+										.font(.system(size: 10))
+										.foregroundStyle(.tertiary)
+								}
 
-                Spacer()
-              }
-              .padding(.horizontal, 14)
-              .padding(.vertical, 8)
+								Spacer()
+							}
+							.padding(.horizontal, 14)
+							.padding(.vertical, 8)
 
-              if ext.id != state.installedExtensions.last?.id {
-                Divider()
-                  .padding(.leading, 44)
-              }
-            }
-          }
-        }
-        .frame(height: 200)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.4))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color(NSColor.separatorColor).opacity(0.7), lineWidth: 1)
-        )
-      }
-    }
-    .frame(maxWidth: .infinity)
-  }
+							if ext.id != state.installedExtensions.last?.id {
+								Divider()
+									.padding(.leading, 44)
+							}
+						}
+					}
+				}
+				.frame(height: 200)
+				.background(Color(NSColor.controlBackgroundColor).opacity(0.4))
+				.clipShape(RoundedRectangle(cornerRadius: 8))
+				.overlay(
+					RoundedRectangle(cornerRadius: 8)
+						.stroke(Color(NSColor.separatorColor).opacity(0.7), lineWidth: 1)
+				)
+			}
+		}
+		.frame(maxWidth: .infinity)
+	}
 }
 
 struct InstalledExtensionItem: Identifiable {
-  let id: String
-  let name: String
-  let description: String
-  let version: String
-  let iconUrl: String?
+	let id: String
+	let name: String
+	let description: String
+	let version: String
+	let iconUrl: String?
 }

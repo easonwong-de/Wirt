@@ -1,6 +1,10 @@
 {
-  "i18n-ally.displayLanguage": "en",
-  "i18n-ally.keystyle": "nested",
-  "i18n-ally.localesPaths": ["WirtExtension/WebExtension/locales"],
-  "i18n-ally.sourceLanguage": "en"
+	"[yaml]": { "editor.insertSpaces": true, "editor.tabSize": 2 },
+	"editor.formatOnSave": true,
+	"editor.insertSpaces": false,
+	"editor.tabSize": 4,
+	"i18n-ally.displayLanguage": "en",
+	"i18n-ally.keystyle": "nested",
+	"i18n-ally.localesPaths": ["WirtExtension/WebExtension/locales"],
+	"i18n-ally.sourceLanguage": "en"
 }

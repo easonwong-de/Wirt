@@ -10,6 +10,7 @@ Ensure the following tools are installed:
 - **Xcode:** Xcode 15.0 or later
 - **Bun:** [Bun](https://bun.sh/) 1.1 or later
 - **Safari:** Safari with developer settings enabled
+- **swift-format:** [swift-format](https://github.com/swiftlang/swift-format) (`brew install swift-format`)
 
 ## Project Structure
 

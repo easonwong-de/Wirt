@@ -6,7 +6,6 @@
 	"type": "module",
 	"scripts": {
 		"build": "wxt build -b safari --mv3",
-		"format": "prettier --write .",
 		"postinstall": "wxt prepare"
 	},
 	"dependencies": {

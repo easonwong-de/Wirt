@@ -5,7 +5,9 @@ labels: [feature]
 body:
   - type: markdown
     attributes:
-      value: If you want to suggest more than one feature, please open a separate issue for each request.
+      value:
+        If you want to suggest more than one feature, please open a separate
+        issue for each request.
   - type: textarea
     id: description
     attributes:

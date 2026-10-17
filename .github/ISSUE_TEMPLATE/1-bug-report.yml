@@ -18,13 +18,15 @@ body:
     id: description
     attributes:
       label: Description
-      description: Provide a detailed description of the bug, including steps to reproduce.
+      description:
+        Provide a detailed description of the bug, including steps to reproduce.
     validations:
       required: true
   - type: input
     id: environment
     attributes:
       label: Environment
-      description: Specify macOS version and Safari version (e.g. macOS 14.5, Safari 17.5).
+      description:
+        Specify macOS version and Safari version (e.g. macOS 14.5, Safari 17.5).
     validations:
       required: true

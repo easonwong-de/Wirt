@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+
+# Format staged Swift files
+SWIFT_FILES=$(git diff --cached --name-only --diff-filter=d | grep '\.swift$' || true)
+if [ -n "$SWIFT_FILES" ]; then
+	if command -v swift-format >/dev/null 2>&1; then
+		swift-format format -i $SWIFT_FILES
+		CHANGED_SWIFT=$(git diff --name-only $SWIFT_FILES || true)
+		if [ -n "$CHANGED_SWIFT" ]; then
+			echo "$CHANGED_SWIFT"
+		fi
+		git add $SWIFT_FILES
+	else
+		echo "warning: swift-format not found. Swift files were not formatted." >&2
+	fi
+fi
+
+# Format staged Web Extension, TypeScript, JSON, and YAML files
+WEB_FILES=$(git diff --cached --name-only --diff-filter=d | grep -E '\.(ts|tsx|js|json|css|yaml|yml|md)$' || true)
+if [ -n "$WEB_FILES" ]; then
+	if command -v bun >/dev/null 2>&1; then
+		REL_FILES=""
+		for f in $WEB_FILES; do
+			REL_FILES="$REL_FILES ../../$f"
+		done
+		bun --cwd WirtExtension/WebExtension prettier --config ./prettier.config.ts --write $REL_FILES 2>&1 | grep -v '(unchanged)' || true
+		git add $WEB_FILES
+	else
+		echo "warning: bun not found. Files were not formatted with Prettier." >&2
+	fi
+fi

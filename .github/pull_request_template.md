@@ -8,10 +8,10 @@ Briefly describe the change and its rationale.
 - [ ] New feature
 - [ ] Refactoring
 - [ ] Documentation
-- [ ] Maintenance / CI
+- [ ] Maintenance
 
 ## Verification
 
 - [ ] Application builds cleanly (`xcodebuild`)
-- [ ] Extension scripts format cleanly (`bun run format`)
+- [ ] Code formatted cleanly
 - [ ] Tested locally in Safari

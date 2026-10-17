@@ -1,28 +1,43 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Build Wirt (Debug)",
-      "type": "shell",
-      "command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Debug -destination 'platform=macOS' build",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": ["$xcode"]
-    },
-    {
-      "label": "Build Wirt (Release)",
-      "type": "shell",
-      "command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Release -destination 'platform=macOS' build",
-      "group": "build",
-      "problemMatcher": ["$xcode"]
-    },
-    {
-      "label": "Clean Wirt",
-      "type": "shell",
-      "command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -destination 'platform=macOS' clean",
-      "problemMatcher": []
-    }
-  ]
+	"tasks": [
+		{
+			"command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Debug -destination 'platform=macOS' build",
+			"group": { "isDefault": true, "kind": "build" },
+			"label": "Build Wirt (Debug)",
+			"problemMatcher": ["$xcode"],
+			"type": "shell"
+		},
+		{
+			"command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Release -destination 'platform=macOS' build",
+			"group": "build",
+			"label": "Build Wirt (Release)",
+			"problemMatcher": ["$xcode"],
+			"type": "shell"
+		},
+		{
+			"command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -destination 'platform=macOS' clean",
+			"label": "Clean Wirt",
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "swift-format format -i -r Wirt WirtExtension",
+			"label": "Format Swift",
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "bun --cwd WirtExtension/WebExtension prettier --write . 2>&1 | grep -v '(unchanged)' || true",
+			"label": "Format Web Extension",
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "swift-format format -i -r Wirt WirtExtension && (bun --cwd WirtExtension/WebExtension prettier --write . 2>&1 | grep -v '(unchanged)' || true)",
+			"label": "Format All",
+			"problemMatcher": [],
+			"type": "shell"
+		}
+	],
+	"version": "2.0.0"
 }
