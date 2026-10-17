@@ -21,7 +21,7 @@ treeView-beta
 │   ├── Models/ ## data models and representations
 │   ├── Protocols/ ## XPC communication protocol
 │   ├── Resources/ ## host bundle resources and shims
-│   ├── Services/ ## installer, runtime, and XPC listener services
+│   ├── Core/ ## installer, runtime, and XPC listener services
 │   ├── ContentView.swift ## host application SwiftUI view
 │   ├── Info.plist ## host application property list
 │   ├── Wirt.entitlements ## host application security entitlements

@@ -14,11 +14,11 @@
 		B20001000000000000000000 /* WirtApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20001000000000000000000 /* WirtApp.swift */; };
 		B20002000000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20002000000000000000000 /* ContentView.swift */; };
 		BFE100010000000000000000 /* Models/ExtensionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100010000000000000000 /* Models/ExtensionModels.swift */; };
-		BFE100020000000000000000 /* Services/ExtensionInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100020000000000000000 /* Services/ExtensionInstaller.swift */; };
-		BFE100030000000000000000 /* Services/ExtensionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100030000000000000000 /* Services/ExtensionRuntime.swift */; };
+		BFE100020000000000000000 /* Core/ExtensionInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100020000000000000000 /* Core/ExtensionInstaller.swift */; };
+		BFE100030000000000000000 /* Core/ExtensionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100030000000000000000 /* Core/ExtensionRuntime.swift */; };
 		BFE100040000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */; };
-		BFE100050000000000000000 /* Services/ExtensionListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* Services/ExtensionListener.swift */; };
-		BFE100080000000000000000 /* Services/ExtensionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100080000000000000000 /* Services/ExtensionStorage.swift */; };
+		BFE100050000000000000000 /* Core/ExtensionListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* Core/ExtensionListener.swift */; };
+		BFE100080000000000000000 /* Core/ExtensionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100080000000000000000 /* Core/ExtensionStorage.swift */; };
 		BFE100060000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */; };
 		BFE100070000000000000000 /* de.easonwong.Wirt.agent.plist in Embed Launch Agents */ = {isa = PBXBuildFile; fileRef = FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */; };
 /* End PBXBuildFile section */
@@ -67,11 +67,11 @@
 		E20001000000000000000000 /* WirtApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WirtApp.swift; sourceTree = "<group>"; };
 		E20002000000000000000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		FRE100010000000000000000 /* Models/ExtensionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/ExtensionModels.swift; sourceTree = "<group>"; };
-		FRE100020000000000000000 /* Services/ExtensionInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionInstaller.swift; sourceTree = "<group>"; };
-		FRE100030000000000000000 /* Services/ExtensionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionRuntime.swift; sourceTree = "<group>"; };
+		FRE100020000000000000000 /* Core/ExtensionInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionInstaller.swift; sourceTree = "<group>"; };
+		FRE100030000000000000000 /* Core/ExtensionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionRuntime.swift; sourceTree = "<group>"; };
 		FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocols/HostXPCProtocol.swift; sourceTree = "<group>"; };
-		FRE100050000000000000000 /* Services/ExtensionListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionListener.swift; sourceTree = "<group>"; };
-		FRE100080000000000000000 /* Services/ExtensionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionStorage.swift; sourceTree = "<group>"; };
+		FRE100050000000000000000 /* Core/ExtensionListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionListener.swift; sourceTree = "<group>"; };
+		FRE100080000000000000000 /* Core/ExtensionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionStorage.swift; sourceTree = "<group>"; };
 		FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = LaunchAgents/de.easonwong.Wirt.agent.plist; sourceTree = "<group>"; };
 		DOC000020000000000000000 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		DOC000030000000000000000 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = SOURCE_ROOT; };
@@ -118,11 +118,11 @@
 				E20001000000000000000000 /* WirtApp.swift */,
 				E20002000000000000000000 /* ContentView.swift */,
 				FRE100010000000000000000 /* Models/ExtensionModels.swift */,
-				FRE100020000000000000000 /* Services/ExtensionInstaller.swift */,
-				FRE100030000000000000000 /* Services/ExtensionRuntime.swift */,
+				FRE100020000000000000000 /* Core/ExtensionInstaller.swift */,
+				FRE100030000000000000000 /* Core/ExtensionRuntime.swift */,
 				FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */,
-				FRE100050000000000000000 /* Services/ExtensionListener.swift */,
-				FRE100080000000000000000 /* Services/ExtensionStorage.swift */,
+				FRE100050000000000000000 /* Core/ExtensionListener.swift */,
+				FRE100080000000000000000 /* Core/ExtensionStorage.swift */,
 				FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */,
 				ENT00010000000000000000 /* Wirt.entitlements */,
 				9BFC4B54307EDCE90098F3AD /* Assets.xcassets */,
@@ -278,11 +278,11 @@
 				B20001000000000000000000 /* WirtApp.swift in Sources */,
 				B20002000000000000000000 /* ContentView.swift in Sources */,
 				BFE100010000000000000000 /* Models/ExtensionModels.swift in Sources */,
-				BFE100020000000000000000 /* Services/ExtensionInstaller.swift in Sources */,
-				BFE100030000000000000000 /* Services/ExtensionRuntime.swift in Sources */,
+				BFE100020000000000000000 /* Core/ExtensionInstaller.swift in Sources */,
+				BFE100030000000000000000 /* Core/ExtensionRuntime.swift in Sources */,
 				BFE100040000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */,
-				BFE100050000000000000000 /* Services/ExtensionListener.swift in Sources */,
-				BFE100080000000000000000 /* Services/ExtensionStorage.swift in Sources */,
+				BFE100050000000000000000 /* Core/ExtensionListener.swift in Sources */,
+				BFE100080000000000000000 /* Core/ExtensionStorage.swift in Sources */,
 			);
 		};
 		9BFC4B57307EDCE90098F3AD /* Sources */ = {
