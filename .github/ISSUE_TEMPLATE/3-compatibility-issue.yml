@@ -1,0 +1,20 @@
+name: Compatibility Issue
+description: A specific extension is not working as expected in Wirt.
+title: "Extension: [Extension Name]"
+labels: [compatibility]
+body:
+  - type: input
+    id: extension
+    attributes:
+      label: Extension Name & Store Link
+      description: Link to the extension on Chrome Web Store or Firefox Add-ons.
+      placeholder: https://chromewebstore.google.com/detail/...
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe what fails when using this extension.
+    validations:
+      required: true

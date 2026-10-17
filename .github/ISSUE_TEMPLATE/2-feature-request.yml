@@ -1,0 +1,15 @@
+name: Feature Request
+description: Wirt is missing a feature or enhancement.
+title: Replace With Title
+labels: [feature]
+body:
+  - type: markdown
+    attributes:
+      value: If you want to suggest more than one feature, please open a separate issue for each request.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature you would like to see implemented.
+    validations:
+      required: true

@@ -1,0 +1,30 @@
+name: Bug Report
+description: Wirt is not behaving as expected.
+title: Replace With Title
+labels: [bug]
+body:
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      options:
+        - label: I am using macOS 14.0 or later.
+          required: true
+        - label: Unsigned extensions are enabled in Safari Develop menu.
+          required: true
+        - label: The Wirt extension is enabled in Safari Settings.
+          required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a detailed description of the bug, including steps to reproduce.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Specify macOS version and Safari version (e.g. macOS 14.5, Safari 17.5).
+    validations:
+      required: true
