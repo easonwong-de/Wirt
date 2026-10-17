@@ -26,7 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     if CommandLine.arguments.contains(Self.backgroundArgument) {
       NSApp.setActivationPolicy(.accessory)
-      HostXPCListener.shared.start()
+      ExtensionListener.shared.start()
+      ExtensionRuntime.shared.bootInstalledExtensions()
     } else if registerAgent() {
       handOffToAgent()
     } else {
@@ -36,7 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   private func startForeground() {
     NSApp.setActivationPolicy(.regular)
-    HostXPCListener.shared.start()
+    ExtensionListener.shared.start()
+    ExtensionRuntime.shared.bootInstalledExtensions()
     showSettings()
   }
 

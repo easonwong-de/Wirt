@@ -10,22 +10,16 @@
 		9BFC4B55307EDCE90098F3AD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B54307EDCE90098F3AD /* Assets.xcassets */; };
 		9BFC4B5C307EDCE90098F3AD /* WirtExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		9BFC4B61307EDCE90098F3AD /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */; };
-		9BFC4B75307EDCE90098F3AD /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B6D307EDCE90098F3AD /* popup.js */; };
-		9BFC4B76307EDCE90098F3AD /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B6E307EDCE90098F3AD /* background.js */; };
-		9BFC4B78307EDCE90098F3AD /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B70307EDCE90098F3AD /* popup.html */; };
-		9BFC4B79307EDCE90098F3AD /* bootstrapper.js in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B71307EDCE90098F3AD /* bootstrapper.js */; };
-		9BFC4B7A307EDCE90098F3AD /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B72307EDCE90098F3AD /* manifest.json */; };
-		9BFC4B7B307EDCE90098F3AD /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B73307EDCE90098F3AD /* popup.css */; };
-		9BFC4B7C307EDCE90098F3AD /* shim in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B74307EDCE90098F3AD /* shim */; };
 		SHM000020000000000000000 /* shim in Resources */ = {isa = PBXBuildFile; fileRef = SHM000010000000000000000 /* shim */; };
 		B20001000000000000000000 /* WirtApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20001000000000000000000 /* WirtApp.swift */; };
 		B20002000000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20002000000000000000000 /* ContentView.swift */; };
-		BFE100010000000000000000 /* Core/ExtensionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100010000000000000000 /* Core/ExtensionModels.swift */; };
-		BFE100020000000000000000 /* Ingestion/PackageIngestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100020000000000000000 /* Ingestion/PackageIngestionService.swift */; };
-		BFE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */; };
-		BFE100040000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */; };
-		BFE100050000000000000000 /* IPC/HostXPCListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* IPC/HostXPCListener.swift */; };
-		BFE100060000000000000000 /* IPC/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */; };
+		BFE100010000000000000000 /* Models/ExtensionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100010000000000000000 /* Models/ExtensionModels.swift */; };
+		BFE100020000000000000000 /* Services/ExtensionInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100020000000000000000 /* Services/ExtensionInstaller.swift */; };
+		BFE100030000000000000000 /* Services/ExtensionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100030000000000000000 /* Services/ExtensionRuntime.swift */; };
+		BFE100040000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */; };
+		BFE100050000000000000000 /* Services/ExtensionListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* Services/ExtensionListener.swift */; };
+		BFE100080000000000000000 /* Services/ExtensionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100080000000000000000 /* Services/ExtensionStorage.swift */; };
+		BFE100060000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */; };
 		BFE100070000000000000000 /* de.easonwong.Wirt.agent.plist in Embed Launch Agents */ = {isa = PBXBuildFile; fileRef = FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */; };
 /* End PBXBuildFile section */
 
@@ -69,21 +63,15 @@
 		9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WirtExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		9BFC4B62307EDCE90098F3AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		9BFC4B6D307EDCE90098F3AD /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = Resources/popup.js; sourceTree = "<group>"; };
-		9BFC4B6E307EDCE90098F3AD /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
-		9BFC4B70307EDCE90098F3AD /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = Resources/popup.html; sourceTree = "<group>"; };
-		9BFC4B71307EDCE90098F3AD /* bootstrapper.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = bootstrapper.js; path = Resources/bootstrapper.js; sourceTree = "<group>"; };
-		9BFC4B72307EDCE90098F3AD /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
-		9BFC4B73307EDCE90098F3AD /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = Resources/popup.css; sourceTree = "<group>"; };
-		9BFC4B74307EDCE90098F3AD /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Resources/shim; sourceTree = "<group>"; };
 		SHM000010000000000000000 /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Wirt/Resources/shim; sourceTree = SOURCE_ROOT; };
 		E20001000000000000000000 /* WirtApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WirtApp.swift; sourceTree = "<group>"; };
 		E20002000000000000000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		FRE100010000000000000000 /* Core/ExtensionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionModels.swift; sourceTree = "<group>"; };
-		FRE100020000000000000000 /* Ingestion/PackageIngestionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ingestion/PackageIngestionService.swift; sourceTree = "<group>"; };
-		FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supervisor/ExtensionSupervisor.swift; sourceTree = "<group>"; };
-		FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCProtocol.swift; sourceTree = "<group>"; };
-		FRE100050000000000000000 /* IPC/HostXPCListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPC/HostXPCListener.swift; sourceTree = "<group>"; };
+		FRE100010000000000000000 /* Models/ExtensionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/ExtensionModels.swift; sourceTree = "<group>"; };
+		FRE100020000000000000000 /* Services/ExtensionInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionInstaller.swift; sourceTree = "<group>"; };
+		FRE100030000000000000000 /* Services/ExtensionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionRuntime.swift; sourceTree = "<group>"; };
+		FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocols/HostXPCProtocol.swift; sourceTree = "<group>"; };
+		FRE100050000000000000000 /* Services/ExtensionListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionListener.swift; sourceTree = "<group>"; };
+		FRE100080000000000000000 /* Services/ExtensionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtensionStorage.swift; sourceTree = "<group>"; };
 		FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = LaunchAgents/de.easonwong.Wirt.agent.plist; sourceTree = "<group>"; };
 		DOC000020000000000000000 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		DOC000030000000000000000 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = SOURCE_ROOT; };
@@ -129,11 +117,12 @@
 			children = (
 				E20001000000000000000000 /* WirtApp.swift */,
 				E20002000000000000000000 /* ContentView.swift */,
-				FRE100010000000000000000 /* Core/ExtensionModels.swift */,
-				FRE100020000000000000000 /* Ingestion/PackageIngestionService.swift */,
-				FRE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift */,
-				FRE100040000000000000000 /* IPC/HostXPCProtocol.swift */,
-				FRE100050000000000000000 /* IPC/HostXPCListener.swift */,
+				FRE100010000000000000000 /* Models/ExtensionModels.swift */,
+				FRE100020000000000000000 /* Services/ExtensionInstaller.swift */,
+				FRE100030000000000000000 /* Services/ExtensionRuntime.swift */,
+				FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */,
+				FRE100050000000000000000 /* Services/ExtensionListener.swift */,
+				FRE100080000000000000000 /* Services/ExtensionStorage.swift */,
 				FRE100070000000000000000 /* de.easonwong.Wirt.agent.plist */,
 				ENT00010000000000000000 /* Wirt.entitlements */,
 				9BFC4B54307EDCE90098F3AD /* Assets.xcassets */,
@@ -288,17 +277,18 @@
 			files = (
 				B20001000000000000000000 /* WirtApp.swift in Sources */,
 				B20002000000000000000000 /* ContentView.swift in Sources */,
-				BFE100010000000000000000 /* Core/ExtensionModels.swift in Sources */,
-				BFE100020000000000000000 /* Ingestion/PackageIngestionService.swift in Sources */,
-				BFE100030000000000000000 /* Supervisor/ExtensionSupervisor.swift in Sources */,
-				BFE100040000000000000000 /* IPC/HostXPCProtocol.swift in Sources */,
-				BFE100050000000000000000 /* IPC/HostXPCListener.swift in Sources */,
+				BFE100010000000000000000 /* Models/ExtensionModels.swift in Sources */,
+				BFE100020000000000000000 /* Services/ExtensionInstaller.swift in Sources */,
+				BFE100030000000000000000 /* Services/ExtensionRuntime.swift in Sources */,
+				BFE100040000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */,
+				BFE100050000000000000000 /* Services/ExtensionListener.swift in Sources */,
+				BFE100080000000000000000 /* Services/ExtensionStorage.swift in Sources */,
 			);
 		};
 		9BFC4B57307EDCE90098F3AD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				BFE100060000000000000000 /* IPC/HostXPCProtocol.swift in Sources */,
+				BFE100060000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */,
 				9BFC4B61307EDCE90098F3AD /* SafariWebExtensionHandler.swift in Sources */,
 			);
 		};
@@ -443,7 +433,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WirtExtension/Info.plist;
@@ -517,7 +507,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;

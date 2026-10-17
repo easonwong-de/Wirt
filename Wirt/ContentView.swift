@@ -45,7 +45,7 @@ final class AppState: ObservableObject {
   }
 
   func loadInstalledExtensions() {
-    let storageDir = PackageIngestionService.shared.storageDirectory
+    let storageDir = ExtensionInstaller.shared.storageDirectory
     guard
       let items = try? FileManager.default.contentsOfDirectory(
         at: storageDir, includingPropertiesForKeys: nil)
@@ -56,7 +56,7 @@ final class AppState: ObservableObject {
 
     var loaded: [InstalledExtensionItem] = []
     for item in items where item.hasDirectoryPath {
-      if let desc = try? PackageIngestionService.shared.parseManifest(
+      if let desc = try? ExtensionInstaller.shared.parseManifest(
         in: item, fallbackId: item.lastPathComponent)
       {
         loaded.append(InstalledExtensionItem(id: desc.id, name: desc.name, version: desc.version))

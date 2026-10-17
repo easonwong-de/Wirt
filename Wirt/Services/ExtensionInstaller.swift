@@ -1,7 +1,8 @@
+import CryptoKit
 import Foundation
 
-public final class PackageIngestionService: Sendable {
-  public static let shared = PackageIngestionService()
+public final class ExtensionInstaller: Sendable {
+  public static let shared = ExtensionInstaller()
 
   public let storageDirectory: URL
 
@@ -27,7 +28,7 @@ public final class PackageIngestionService: Sendable {
       !(200...299).contains(httpResponse.statusCode)
     {
       throw NSError(
-        domain: "PackageIngestionService",
+        domain: "ExtensionInstaller",
         code: httpResponse.statusCode,
         userInfo: [
           NSLocalizedDescriptionKey: "Download failed with HTTP \(httpResponse.statusCode)"
@@ -36,14 +37,29 @@ public final class PackageIngestionService: Sendable {
     }
 
     let data = try Data(contentsOf: tempFile)
-    let extId = deriveExtensionId(from: url)
-    let targetDir = storageDirectory.appendingPathComponent(extId, isDirectory: true)
-    try? FileManager.default.removeItem(at: targetDir)
-    try FileManager.default.createDirectory(at: targetDir, withIntermediateDirectories: true)
+    let urlDerivedId = deriveExtensionId(from: url)
 
-    try extractPackage(data: data, to: targetDir)
-    let descriptor = try parseManifest(in: targetDir, fallbackId: extId)
-    return descriptor
+    let stagingDir = storageDirectory.appendingPathComponent(
+      ".staging_\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: stagingDir, withIntermediateDirectories: true)
+
+    defer {
+      try? FileManager.default.removeItem(at: stagingDir)
+    }
+
+    try extractPackage(data: data, to: stagingDir)
+    let rawDescriptor = try parseManifest(in: stagingDir, fallbackId: urlDerivedId)
+
+    let canonicalId = sanitizeIdentifier(rawDescriptor.id)
+    let targetDir = storageDirectory.appendingPathComponent(canonicalId, isDirectory: true)
+
+    if FileManager.default.fileExists(atPath: targetDir.path) {
+      try FileManager.default.removeItem(at: targetDir)
+    }
+
+    try FileManager.default.moveItem(at: stagingDir, to: targetDir)
+
+    return try parseManifest(in: targetDir, fallbackId: canonicalId)
   }
 
   private func deriveExtensionId(from url: URL) -> String {
@@ -61,8 +77,10 @@ public final class PackageIngestionService: Sendable {
       }
     }
     let lastComponent = url.deletingPathExtension().lastPathComponent
-    if !lastComponent.isEmpty && lastComponent != "crx" && lastComponent != "xpi" {
-      return lastComponent.lowercased()
+    if !lastComponent.isEmpty && lastComponent != "crx" && lastComponent != "xpi"
+      && lastComponent != "latest"
+    {
+      return sanitizeIdentifier(lastComponent.lowercased())
     }
     return String(UUID().uuidString.prefix(16).lowercased())
   }
@@ -70,10 +88,20 @@ public final class PackageIngestionService: Sendable {
   private func extractPackage(data: Data, to destination: URL) throws {
     var zipData = data
     if data.count > 16 && data.prefix(4) == Data([0x43, 0x72, 0x32, 0x34]) {
-      let version = data[4..<8].withUnsafeBytes { $0.load(as: UInt32.self) }
+      let version = data[4..<8].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
       if version == 3 {
-        let headerSize = Int(data[8..<12].withUnsafeBytes { $0.load(as: UInt32.self) })
+        let headerSize = Int(
+          data[8..<12].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) })
         let zipOffset = 12 + headerSize
+        if data.count > zipOffset {
+          zipData = data.advanced(by: zipOffset)
+        }
+      } else if version == 2 {
+        let pubKeyLength = Int(
+          data[8..<12].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) })
+        let sigLength = Int(
+          data[12..<16].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) })
+        let zipOffset = 16 + pubKeyLength + sigLength
         if data.count > zipOffset {
           zipData = data.advanced(by: zipOffset)
         }
@@ -112,6 +140,11 @@ public final class PackageIngestionService: Sendable {
       let geckoId = gecko["id"] as? String, !geckoId.isEmpty
     {
       resolvedId = geckoId
+    } else if let key = json["key"] as? String,
+      let keyData = Data(base64Encoded: key, options: [.ignoreUnknownCharacters]),
+      fallbackId.count != 32
+    {
+      resolvedId = deriveIdFromPublicKey(keyData)
     }
 
     var backgroundEntry: BackgroundEntry?
@@ -120,7 +153,8 @@ public final class PackageIngestionService: Sendable {
         let isModule = (bg["type"] as? String) == "module"
         backgroundEntry = BackgroundEntry(scripts: [sw], isModule: isModule)
       } else if let scripts = bg["scripts"] as? [String] {
-        backgroundEntry = BackgroundEntry(scripts: scripts, isModule: false)
+        let isModule = (bg["type"] as? String) == "module"
+        backgroundEntry = BackgroundEntry(scripts: scripts, isModule: isModule)
       } else if let page = bg["page"] as? String {
         backgroundEntry = BackgroundEntry(scripts: [page], isModule: false)
       }
@@ -152,7 +186,7 @@ public final class PackageIngestionService: Sendable {
     }
 
     return ExtensionDescriptor(
-      id: resolvedId,
+      id: sanitizeIdentifier(resolvedId),
       name: name,
       version: version,
       manifestVersion: manifestVersion,
@@ -161,5 +195,28 @@ public final class PackageIngestionService: Sendable {
       action: actionEntry,
       permissions: permissions
     )
+  }
+
+  private func deriveIdFromPublicKey(_ keyData: Data) -> String {
+    let digest = SHA256.hash(data: keyData)
+    var chars: [Character] = []
+    for byte in digest.prefix(16) {
+      let high = (byte >> 4) & 0x0f
+      let low = byte & 0x0f
+      let scalarHigh = UnicodeScalar(UInt8(ascii: "a") + high)
+      let scalarLow = UnicodeScalar(UInt8(ascii: "a") + low)
+      chars.append(Character(scalarHigh))
+      chars.append(Character(scalarLow))
+    }
+    return String(chars)
+  }
+
+  private func sanitizeIdentifier(_ id: String) -> String {
+    let pattern = "[^a-zA-Z0-9._@-]"
+    let cleaned = id.replacingOccurrences(of: pattern, with: "_", options: .regularExpression)
+    if cleaned.isEmpty || cleaned == "." || cleaned == ".." {
+      return String(UUID().uuidString.prefix(16).lowercased())
+    }
+    return cleaned
   }
 }
