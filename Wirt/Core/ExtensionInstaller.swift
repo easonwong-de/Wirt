@@ -12,7 +12,7 @@ public final class ExtensionInstaller: Sendable {
 			?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(
 				"Library/Application Support")
 		let hostDir = appSupport.appendingPathComponent(
-			"de.easonwong.Wirt/Extensions", isDirectory: true)
+			"Wirt/Extensions", isDirectory: true)
 		try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
 		self.storageDirectory = hostDir
 	}
@@ -52,6 +52,73 @@ public final class ExtensionInstaller: Sendable {
 		try extractPackage(data: data, to: stagingDir)
 		let rawDescriptor = try parseManifest(in: stagingDir, fallbackId: urlDerivedId)
 
+		let canonicalId = sanitizeIdentifier(rawDescriptor.id)
+		let targetDir = storageDirectory.appendingPathComponent(canonicalId, isDirectory: true)
+
+		if FileManager.default.fileExists(atPath: targetDir.path) {
+			try FileManager.default.removeItem(at: targetDir)
+		}
+
+		try FileManager.default.moveItem(at: stagingDir, to: targetDir)
+
+		return try parseManifest(in: targetDir, fallbackId: canonicalId)
+	}
+
+	public func installFromDisk(at url: URL) throws -> ExtensionDescriptor {
+		var isDir: ObjCBool = false
+		guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {
+			throw NSError(
+				domain: "ExtensionInstaller",
+				code: 404,
+				userInfo: [NSLocalizedDescriptionKey: "Selected file or directory does not exist."]
+			)
+		}
+
+		let stagingDir = storageDirectory.appendingPathComponent(
+			".staging_\(UUID().uuidString)", isDirectory: true)
+		try FileManager.default.createDirectory(at: stagingDir, withIntermediateDirectories: true)
+		defer {
+			try? FileManager.default.removeItem(at: stagingDir)
+		}
+
+		if isDir.boolValue {
+			var sourceDir = url
+			let directManifest = sourceDir.appendingPathComponent("manifest.json")
+			if !FileManager.default.fileExists(atPath: directManifest.path) {
+				if let subDirs = try? FileManager.default.contentsOfDirectory(
+					at: sourceDir, includingPropertiesForKeys: nil)
+				{
+					if let found = subDirs.first(where: {
+						FileManager.default.fileExists(
+							atPath: $0.appendingPathComponent("manifest.json").path)
+					}) {
+						sourceDir = found
+					} else {
+						throw NSError(
+							domain: "ExtensionInstaller",
+							code: 400,
+							userInfo: [
+								NSLocalizedDescriptionKey:
+									"No manifest.json found in the selected directory."
+							]
+						)
+					}
+				}
+			}
+
+			let items = try FileManager.default.contentsOfDirectory(
+				at: sourceDir, includingPropertiesForKeys: nil)
+			for item in items {
+				let dest = stagingDir.appendingPathComponent(item.lastPathComponent)
+				try FileManager.default.copyItem(at: item, to: dest)
+			}
+		} else {
+			let data = try Data(contentsOf: url)
+			try extractPackage(data: data, to: stagingDir)
+		}
+
+		let rawDescriptor = try parseManifest(
+			in: stagingDir, fallbackId: deriveExtensionId(from: url))
 		let canonicalId = sanitizeIdentifier(rawDescriptor.id)
 		let targetDir = storageDirectory.appendingPathComponent(canonicalId, isDirectory: true)
 
@@ -228,6 +295,20 @@ public final class ExtensionInstaller: Sendable {
 
 		let iconUrl = resolveIconDataUrl(in: directory, manifest: json)
 
+		var optionsPage: String?
+		if let optionsUi = json["options_ui"] as? [String: Any],
+			let page = optionsUi["page"] as? String
+		{
+			optionsPage = page
+		} else if let page = json["options_page"] as? String {
+			optionsPage = page
+		}
+
+		let homepageUrl = json["homepage_url"] as? String
+		let author =
+			(json["author"] as? String)
+			?? (json["developer"] as? [String: Any])?["name"] as? String
+
 		return ExtensionDescriptor(
 			id: sanitizeIdentifier(resolvedId),
 			name: name,
@@ -238,7 +319,10 @@ public final class ExtensionInstaller: Sendable {
 			contentScripts: contentScripts,
 			action: actionEntry,
 			permissions: permissions,
-			iconUrl: iconUrl
+			iconUrl: iconUrl,
+			optionsPage: optionsPage,
+			homepageUrl: homepageUrl,
+			author: author
 		)
 	}
 

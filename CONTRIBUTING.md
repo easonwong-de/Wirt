@@ -28,7 +28,7 @@ treeView-beta
 │   ├── Wirt.entitlements ## host application security entitlements
 │   └── WirtApp.swift ## host application entry point
 ├── WirtExtension/ ## Safari extension companion target
-│   ├── SafariWebExtensionHandler.swift ## native messaging handler
+│   ├── ExtensionHandler.swift ## native messaging handler
 │   ├── Info.plist ## companion extension property list
 │   ├── WirtExtension.entitlements ## companion extension security entitlements
 │   └── WebExtension/ ## WXT companion extension source

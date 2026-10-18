@@ -15,7 +15,7 @@ public final class ExtensionStorage: Sendable {
 			?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(
 				"Library/Application Support")
 		let storageDir = appSupport.appendingPathComponent(
-			"de.easonwong.Wirt/Storage", isDirectory: true)
+			"Wirt/Storage", isDirectory: true)
 		try? FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
 		self.baseDirectory = storageDir
 	}

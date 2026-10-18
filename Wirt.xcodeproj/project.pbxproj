@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		9BFC4B55307EDCE90098F3AD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BFC4B54307EDCE90098F3AD /* Assets.xcassets */; };
 		9BFC4B5C307EDCE90098F3AD /* WirtExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		9BFC4B61307EDCE90098F3AD /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */; };
+		9BFC4B61307EDCE90098F3AD /* ExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BFC4B60307EDCE90098F3AD /* ExtensionHandler.swift */; };
 		SHM000020000000000000000 /* shim in Resources */ = {isa = PBXBuildFile; fileRef = SHM000010000000000000000 /* shim */; };
 		B20001000000000000000000 /* WirtApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20001000000000000000000 /* WirtApp.swift */; };
 		B20002000000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20002000000000000000000 /* ContentView.swift */; };
@@ -61,7 +61,7 @@
 		ENT00020000000000000000 /* WirtExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WirtExtension.entitlements; sourceTree = "<group>"; };
 		9BFC4B56307EDCE90098F3AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9BFC4B5B307EDCE90098F3AD /* WirtExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WirtExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		9BFC4B60307EDCE90098F3AD /* ExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionHandler.swift; sourceTree = "<group>"; };
 		9BFC4B62307EDCE90098F3AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		SHM000010000000000000000 /* shim */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shim; path = Wirt/Resources/shim; sourceTree = SOURCE_ROOT; };
 		E20001000000000000000000 /* WirtApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WirtApp.swift; sourceTree = "<group>"; };
@@ -136,7 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				WEBEXT000000000000000001 /* WebExtension */,
-				9BFC4B60307EDCE90098F3AD /* SafariWebExtensionHandler.swift */,
+				9BFC4B60307EDCE90098F3AD /* ExtensionHandler.swift */,
 				ENT00020000000000000000 /* WirtExtension.entitlements */,
 				9BFC4B62307EDCE90098F3AD /* Info.plist */,
 			);
@@ -289,7 +289,7 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				BFE100060000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */,
-				9BFC4B61307EDCE90098F3AD /* SafariWebExtensionHandler.swift in Sources */,
+				9BFC4B61307EDCE90098F3AD /* ExtensionHandler.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */

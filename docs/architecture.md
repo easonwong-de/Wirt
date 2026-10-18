@@ -12,7 +12,7 @@ flowchart LR
         direction TB
         Boot["Bootstrapper<br/>(bootstrapper.content.ts)"]
         Worker["Extension Worker<br/>(background.ts)"]
-        Handler["Extension Handler<br/>(SafariWebExtensionHandler.swift)"]
+        Handler["Extension Handler<br/>(ExtensionHandler.swift)"]
         Boot -->|"sendMessage()"| Worker
         Worker -->|"sendNativeMessage()"| Handler
     end
@@ -70,11 +70,11 @@ sequenceDiagram
 ```
 
 1. **Launch Agent Registration:** On initial startup, the host registers `de.easonwong.Wirt.agent.plist` through `SMAppService.agent(plistName:)`. The plist assigns ownership of the Mach service `de.easonwong.Wirt.mach` to `launchd`.
-2. **On-Demand Activation:** When Safari sends a request, `SafariWebExtensionHandler` resolves the Mach service. If the host is not running, `launchd` starts `Wirt` with `--background`.
+2. **On-Demand Activation:** When Safari sends a request, `ExtensionHandler` resolves the Mach service. If the host is not running, `launchd` starts `Wirt` with `--background`.
 3. **Automatic Runtime Boot:** On application startup (either foreground or `--background`), `ExtensionRuntime.bootInstalledExtensions()` scans the storage directory and launches background WebViews for all installed extensions.
 4. **Single-Instance Hand-off:** When a user launches `Wirt.app` directly, the new instance registers the agent and sends an XPC `showSettings()` call to the active Mach service. The launcher then terminates itself immediately.
 5. **Headless Background Execution:** When the user closes the settings window, the application hides the window and sets its policy to `.accessory`. The process remains active silently to retain in-memory background runtimes.
-6. **Transient XPC Connections:** `SafariWebExtensionHandler` creates and invalidates an `NSXPCConnection` for each incoming request. This prevents stale sockets across extension reloads.
+6. **Transient XPC Connections:** `ExtensionHandler` creates and invalidates an `NSXPCConnection` for each incoming request. This prevents stale sockets across extension reloads.
 
 ---
 
@@ -177,7 +177,7 @@ sequenceDiagram
     autonumber
     participant Content as Content Script
     participant Worker as Extension Worker<br/>(background.ts)
-    participant Handler as Extension Handler<br/>(SafariWebExtensionHandler.swift)
+    participant Handler as Extension Handler<br/>(ExtensionHandler.swift)
     participant Listener as XPC Listener<br/>(ExtensionListener.swift)
     participant Runtime as Extension Runtime<br/>(ExtensionRuntime.swift)
     participant WebView as Background Runtime (WKWebView)
@@ -203,15 +203,9 @@ Messages share a standardised envelope structure:
 {
 	"correlationId": "e5c2b0d3-1111-4444-8888-abcdef012345",
 	"extensionId": "ext_sample",
-	"type": "RUNTIME_SEND_MESSAGE",
-	"source": {
-		"tabId": 14,
-		"frameId": 0,
-		"url": "https://example.co.uk"
-	},
-	"payload": {
-		"action": "checkRule"
-	}
+	"payload": { "action": "checkRule" },
+	"source": { "tabId": 14, "frameId": 0, "url": "https://example.co.uk" },
+	"type": "RUNTIME_SEND_MESSAGE"
 }
 ```
 
@@ -280,7 +274,7 @@ flowchart LR
 
     subgraph StorageEngine["Storage Service<br/>(ExtensionStorage.swift)"]
         direction TB
-        JSONStore[("Application Support/de.easonwong.Wirt/Storage/<id>.json")]
+        JSONStore[("Application Support/Wirt/Storage/<id>.json")]
     end
 
     subgraph Supervisor["Extension Runtime<br/>(ExtensionRuntime.swift)"]
@@ -299,5 +293,5 @@ flowchart LR
     - Firefox add-ons: Read `browser_specific_settings.gecko.id` or `applications.gecko.id` from `manifest.json`.
     - Chrome extensions: Derived from download URL query parameters (`x=id=...` or `id=...`) or computed via SHA-256 base32 hashing of `manifest.json`'s `key` field.
     - Identifiers are sanitized with `^[a-zA-Z0-9._@-]+$`.
-4. **Atomic Commit:** The staging directory is moved atomically into `~/Library/Application Support/de.easonwong.Wirt/Extensions/<canonical_id>/`.
-5. **Key-Value Storage Persistence:** `ExtensionStorage` provides thread-safe, atomic key-value persistence for `chrome.storage.local` and `chrome.storage.sync` under `~/Library/Application Support/de.easonwong.Wirt/Storage/<canonical_id>.json`.
+4. **Atomic Commit:** The staging directory is moved atomically into `~/Library/Application Support/Wirt/Extensions/<canonical_id>/`.
+5. **Key-Value Storage Persistence:** `ExtensionStorage` provides thread-safe, atomic key-value persistence for `chrome.storage.local` and `chrome.storage.sync` under `~/Library/Application Support/Wirt/Storage/<canonical_id>.json`.

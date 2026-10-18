@@ -1,7 +1,7 @@
 import SafariServices
 import os.log
 
-class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
+class ExtensionHandler: NSObject, NSExtensionRequestHandling {
 	func beginRequest(with context: NSExtensionContext) {
 		guard let item = context.inputItems.first as? NSExtensionItem,
 			let message = item.userInfo?[SFExtensionMessageKey] as? [String: Any]
@@ -11,7 +11,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 		}
 
 		os_log(
-			.default, "SafariWebExtensionHandler received native request: %@",
+			.default, "ExtensionHandler received native request: %@",
 			String(describing: message)
 		)
 
@@ -40,19 +40,19 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 		guard
 			let host = connection.remoteObjectProxyWithErrorHandler({ error in
 				os_log(
-					.error, "SafariWebExtensionHandler XPC proxy error: %@",
+					.error, "ExtensionHandler XPC proxy error: %@",
 					error.localizedDescription)
 				finish(with: ["error": "Wirt is not running. Please open the Wirt app."])
 			}) as? HostXPCProtocol
 		else {
-			os_log(.error, "SafariWebExtensionHandler failed to cast XPC proxy")
+			os_log(.error, "ExtensionHandler failed to cast XPC proxy")
 			finish(with: ["error": "Failed to connect to Wirt."])
 			return
 		}
 
 		host.handleExtensionMessage(message) { reply in
 			os_log(
-				.default, "SafariWebExtensionHandler received native reply: %@",
+				.default, "ExtensionHandler received native reply: %@",
 				String(describing: reply))
 			finish(with: reply)
 		}
