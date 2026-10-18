@@ -17,6 +17,52 @@
 		});
 	}
 
+	const originalConsole = {
+		log: console.log.bind(console),
+		info: console.info.bind(console),
+		warn: console.warn.bind(console),
+		error: console.error.bind(console),
+	};
+
+	function forwardConsole(level, args) {
+		try {
+			const serialized = Array.from(args)
+				.map((arg) => {
+					if (typeof arg === "string") return arg;
+					try {
+						return JSON.stringify(arg, null, 2);
+					} catch {
+						return String(arg);
+					}
+				})
+				.join(" ");
+
+			window.webkit.messageHandlers.hostBridge.postMessage({
+				api: "console.log",
+				extensionId: extId,
+				level,
+				message: serialized,
+			});
+		} catch {}
+	}
+
+	console.log = (...args) => {
+		originalConsole.log(...args);
+		forwardConsole("log", args);
+	};
+	console.info = (...args) => {
+		originalConsole.info(...args);
+		forwardConsole("info", args);
+	};
+	console.warn = (...args) => {
+		originalConsole.warn(...args);
+		forwardConsole("warn", args);
+	};
+	console.error = (...args) => {
+		originalConsole.error(...args);
+		forwardConsole("error", args);
+	};
+
 	window.__wirtBridgeCallback = (requestId, result, error) => {
 		const entry = pendingCallbacks.get(requestId);
 		if (!entry) return;
@@ -61,14 +107,18 @@
 
 	const storageArea = {
 		get(keys, cb) {
-			const promise = callHostBridge("storage.get", { keys: keys ?? null });
+			const promise = callHostBridge("storage.get", {
+				keys: keys ?? null,
+			});
 			if (typeof cb === "function") {
 				promise.then((res) => cb(res)).catch(() => cb({}));
 			}
 			return promise;
 		},
 		set(items, cb) {
-			const promise = callHostBridge("storage.set", { items: items ?? {} });
+			const promise = callHostBridge("storage.set", {
+				items: items ?? {},
+			});
 			if (typeof cb === "function") {
 				promise.then(() => cb()).catch(() => cb());
 			}
@@ -101,7 +151,9 @@
 					cb = message;
 					msg = targetExtId;
 				}
-				const promise = callHostBridge("runtime.sendMessage", { payload: msg });
+				const promise = callHostBridge("runtime.sendMessage", {
+					payload: msg,
+				});
 				if (typeof cb === "function") {
 					promise.then((res) => cb(res)).catch(() => cb(null));
 				}
@@ -119,7 +171,15 @@
 					return this.listeners.has(fn);
 				},
 			},
-			getURL: (path) => `ext-bg://${extId}/${(path || "").replace(/^\//, "")}`,
+			getURL: (path) =>
+				`ext-bg://${extId}/${(path || "").replace(/^\//, "")}`,
+			openOptionsPage: (callback) => {
+				const promise = callHostBridge("runtime.openOptionsPage", {});
+				if (typeof callback === "function") {
+					promise.then(() => callback()).catch(() => callback());
+				}
+				return promise;
+			},
 		},
 		storage: {
 			local: storageArea,
@@ -161,7 +221,9 @@
 		},
 		tabs: {
 			query: (queryInfo) => {
-				return callHostBridge("tabs.query", { queryInfo }).catch(() => []);
+				return callHostBridge("tabs.query", { queryInfo }).catch(
+					() => [],
+				);
 			},
 		},
 		i18n: {
@@ -172,7 +234,8 @@
 				let msg = messages[key];
 				if (typeof msg !== "string") {
 					if (key === "@@extension_id") return extId;
-					if (key === "@@ui_locale") return navigator.language || "en";
+					if (key === "@@ui_locale")
+						return navigator.language || "en";
 					if (key === "@@bidi_dir") return "ltr";
 					if (key === "@@bidi_reversed_dir") return "rtl";
 					return "";
@@ -182,7 +245,10 @@
 						? substitutions
 						: [substitutions];
 					for (let i = 0; i < subs.length; i++) {
-						msg = msg.replace(new RegExp(`\\$${i + 1}`, "g"), String(subs[i]));
+						msg = msg.replace(
+							new RegExp(`\\$${i + 1}`, "g"),
+							String(subs[i]),
+						);
 					}
 				}
 				return msg;

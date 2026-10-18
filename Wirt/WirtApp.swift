@@ -251,59 +251,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 		NSApp.terminate(nil)
 	}
 
-	private func updateWindowSize(to contentHeight: CGFloat, animated: Bool) {
-		guard let window = self.window else { return }
-		let titlebarHeight = window.frame.height - window.contentLayoutRect.height
-		let targetHeight = contentHeight + titlebarHeight
-		let windowSize = window.frame.size
-		let heightDiff = targetHeight - windowSize.height
-		guard abs(heightDiff) > 0.5 else { return }
-
-		let targetOrigin = NSPoint(x: window.frame.origin.x, y: window.frame.origin.y - heightDiff)
-		let targetSize = NSSize(width: window.frame.width, height: targetHeight)
-		let targetRect = NSRect(origin: targetOrigin, size: targetSize)
-
-		if animated && hasInitialisedWindowSize {
-			NSAnimationContext.runAnimationGroup { context in
-				context.duration = 0.3
-				context.allowsImplicitAnimation = true
-				window.setFrame(targetRect, display: true)
-			}
-		} else {
-			window.setFrame(targetRect, display: true)
-			hasInitialisedWindowSize = true
-		}
-	}
-
 	private func setupWindow() {
 		let window = NSWindow(
-			contentRect: NSRect(x: 0, y: 0, width: WindowMetrics.windowWidth, height: 200),
-			styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+			contentRect: NSRect(x: 0, y: 0, width: 940, height: 620),
+			styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
 			backing: .buffered,
 			defer: false
 		)
+		window.minSize = NSSize(width: 760, height: 480)
 		window.title = "Wirt"
-		window.titleVisibility = .visible
+		window.titleVisibility = .hidden
 		window.titlebarAppearsTransparent = true
-		window.titlebarSeparatorStyle = .none
+		window.toolbarStyle = .unified
 		window.isMovableByWindowBackground = true
 		window.isReleasedWhenClosed = false
 		window.delegate = self
 
-		let hostingView = NSHostingView(
-			rootView: ContentView(onHeightChange: { [weak self] newHeight in
-				self?.updateWindowSize(
-					to: newHeight, animated: self?.hasInitialisedWindowSize ?? false)
-			}))
+		let hostingView = NSHostingView(rootView: ContentView())
 		window.contentView = hostingView
 		self.window = window
-
-		let initialHeight = hostingView.fittingSize.height
-		let titlebarHeight = window.frame.height - window.contentLayoutRect.height
-		if initialHeight > titlebarHeight {
-			updateWindowSize(to: initialHeight - titlebarHeight, animated: false)
-		}
-		hasInitialisedWindowSize = true
 		window.center()
 	}
 

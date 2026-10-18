@@ -11,6 +11,9 @@ public struct ExtensionDescriptor: Codable, Identifiable, Sendable {
 	public let action: ActionEntry?
 	public let permissions: [String]
 	public let iconUrl: String?
+	public let optionsPage: String?
+	public let homepageUrl: String?
+	public let author: String?
 
 	public init(
 		id: String,
@@ -22,7 +25,10 @@ public struct ExtensionDescriptor: Codable, Identifiable, Sendable {
 		contentScripts: [ContentScriptEntry],
 		action: ActionEntry?,
 		permissions: [String],
-		iconUrl: String? = nil
+		iconUrl: String? = nil,
+		optionsPage: String? = nil,
+		homepageUrl: String? = nil,
+		author: String? = nil
 	) {
 		self.id = id
 		self.name = name
@@ -34,6 +40,39 @@ public struct ExtensionDescriptor: Codable, Identifiable, Sendable {
 		self.action = action
 		self.permissions = permissions
 		self.iconUrl = iconUrl
+		self.optionsPage = optionsPage
+		self.homepageUrl = homepageUrl
+		self.author = author
+	}
+}
+
+public struct ConsoleLogEntry: Identifiable, Sendable {
+	public let id: UUID
+	public let timestamp: Date
+	public let level: LogLevel
+	public let message: String
+
+	public init(id: UUID = UUID(), timestamp: Date = Date(), level: LogLevel, message: String) {
+		self.id = id
+		self.timestamp = timestamp
+		self.level = level
+		self.message = message
+	}
+
+	public enum LogLevel: String, Codable, CaseIterable, Sendable {
+		case log
+		case info
+		case warn
+		case error
+
+		public var icon: String {
+			switch self {
+			case .log: return "bubble.left"
+			case .info: return "info.circle"
+			case .warn: return "exclamationmark.triangle.fill"
+			case .error: return "xmark.circle.fill"
+			}
+		}
 	}
 }
 

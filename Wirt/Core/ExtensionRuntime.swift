@@ -1,7 +1,7 @@
 import Foundation
 import WebKit
 
-private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
 	private weak var delegate: WKScriptMessageHandler?
 
 	init(delegate: WKScriptMessageHandler) {
@@ -21,6 +21,56 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 
 	private var backgroundWebViews: [String: WKWebView] = [:]
 	private var pendingReplies: [String: ([String: Any]) -> Void] = [:]
+	public private(set) var consoleLogs: [String: [ConsoleLogEntry]] = [:]
+
+	public func getBackgroundWebView(for extensionId: String) -> WKWebView? {
+		return backgroundWebViews[extensionId] ?? backgroundWebViews[extensionId.lowercased()]
+	}
+
+	public func getConsoleLogs(for extensionId: String) -> [ConsoleLogEntry] {
+		return consoleLogs[extensionId.lowercased()] ?? []
+	}
+
+	public func clearConsoleLogs(for extensionId: String) {
+		consoleLogs[extensionId.lowercased()] = []
+		NotificationCenter.default.post(
+			name: NSNotification.Name("WirtConsoleLogsUpdated"),
+			object: nil,
+			userInfo: ["extensionId": extensionId.lowercased()]
+		)
+	}
+
+	public func addConsoleLog(_ entry: ConsoleLogEntry, for extensionId: String) {
+		let key = extensionId.lowercased()
+		var logs = consoleLogs[key] ?? []
+		logs.append(entry)
+		if logs.count > 1000 {
+			logs.removeFirst(logs.count - 1000)
+		}
+		consoleLogs[key] = logs
+		NotificationCenter.default.post(
+			name: NSNotification.Name("WirtConsoleLogsUpdated"),
+			object: nil,
+			userInfo: ["extensionId": key]
+		)
+	}
+
+	public func evaluateConsoleScript(_ script: String, for extensionId: String) async
+		-> (result: String?, error: String?)
+	{
+		guard let webView = getBackgroundWebView(for: extensionId) else {
+			return (nil, "Extension background runtime is not running.")
+		}
+		do {
+			let res = try await webView.evaluateJavaScript(script)
+			if let res = res {
+				return (String(describing: res), nil)
+			}
+			return ("undefined", nil)
+		} catch {
+			return (nil, error.localizedDescription)
+		}
+	}
 
 	public func bootInstalledExtensions() {
 		let storageDir = ExtensionInstaller.shared.storageDirectory
@@ -76,6 +126,9 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 		}
 
 		let webView = WKWebView(frame: .zero, configuration: config)
+		if #available(macOS 13.3, *) {
+			webView.isInspectable = true
+		}
 		backgroundWebViews[descriptor.id] = webView
 
 		let scriptTags = bg.scripts.map { script in
@@ -239,6 +292,22 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 
 		case "storage.clear":
 			ExtensionStorage.shared.clear(extensionId: extId)
+			respondToBridge(
+				extensionId: extId, requestId: requestId, result: ["status": "success"], error: nil)
+
+		case "console.log":
+			let levelStr = dict["level"] as? String ?? "log"
+			let level = ConsoleLogEntry.LogLevel(rawValue: levelStr) ?? .log
+			let messageText = dict["message"] as? String ?? ""
+			let entry = ConsoleLogEntry(level: level, message: messageText)
+			addConsoleLog(entry, for: extId)
+
+		case "runtime.openOptionsPage":
+			NotificationCenter.default.post(
+				name: NSNotification.Name("WirtOpenOptionsPage"),
+				object: nil,
+				userInfo: ["extensionId": extId]
+			)
 			respondToBridge(
 				extensionId: extId, requestId: requestId, result: ["status": "success"], error: nil)
 
