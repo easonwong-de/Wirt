@@ -252,8 +252,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 	}
 
 	private func setupWindow() {
+		let initialSize = NSSize(width: 980, height: 600)
 		let window = NSWindow(
-			contentRect: NSRect(x: 0, y: 0, width: 940, height: 620),
+			contentRect: NSRect(origin: .zero, size: initialSize),
 			styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
 			backing: .buffered,
 			defer: false
@@ -269,6 +270,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
 		let hostingView = NSHostingView(rootView: ContentView())
 		window.contentView = hostingView
+		window.setContentSize(initialSize)
 		self.window = window
 		window.center()
 	}

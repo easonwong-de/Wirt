@@ -252,6 +252,7 @@ struct ContentView: View {
 				emptySelectionView
 			}
 		}
+		.frame(minWidth: 760, idealWidth: 980, minHeight: 480, idealHeight: 600)
 		.onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) {
 			_ in
 			state.checkExtensionState()
@@ -362,67 +363,89 @@ struct SidebarView: View {
 	@State private var extensionToUninstall: ExtensionDescriptor?
 
 	var body: some View {
-		VStack(spacing: 0) {
-			VStack(spacing: 0) {
-				sidebarHeader
-				Divider()
-
-				if state.filteredExtensions.isEmpty {
-					emptyListView
-				} else {
-					List(selection: $state.selectedExtensionId) {
-						ForEach(state.filteredExtensions) { ext in
-							SidebarExtensionRow(extensionDescriptor: ext)
-								.tag(ext.id)
-								.swipeActions(edge: .trailing, allowsFullSwipe: false) {
-									Button(role: .destructive) {
-										state.uninstallExtension(id: ext.id)
-									} label: {
-										Label("Uninstall", systemImage: "trash.fill")
-									}
+		Group {
+			if state.filteredExtensions.isEmpty {
+				emptyListView
+			} else {
+				List(selection: $state.selectedExtensionId) {
+					ForEach(state.filteredExtensions) { ext in
+						SidebarExtensionRow(extensionDescriptor: ext)
+							.tag(ext.id)
+							.swipeActions(edge: .trailing, allowsFullSwipe: false) {
+								Button(role: .destructive) {
+									state.uninstallExtension(id: ext.id)
+								} label: {
+									Label("Uninstall", systemImage: "trash.fill")
 								}
-								.contextMenu {
-									Button {
-										state.openInFinder(id: ext.id)
-									} label: {
-										Label("Show in Finder", systemImage: "folder")
-									}
-
-									Button {
-										state.reloadExtension(id: ext.id)
-									} label: {
-										Label("Reload Runtime", systemImage: "arrow.clockwise")
-									}
-
-									Button {
-										NSPasteboard.general.clearContents()
-										NSPasteboard.general.setString(ext.id, forType: .string)
-									} label: {
-										Label("Copy Extension ID", systemImage: "doc.on.doc")
-									}
-
-									Divider()
-
-									Button(role: .destructive) {
-										extensionToUninstall = ext
-									} label: {
-										Label("Uninstall", systemImage: "trash")
-									}
+							}
+							.contextMenu {
+								Button {
+									state.openInFinder(id: ext.id)
+								} label: {
+									Label("Show in Finder", systemImage: "folder")
 								}
-						}
+
+								Button {
+									state.reloadExtension(id: ext.id)
+								} label: {
+									Label("Reload Runtime", systemImage: "arrow.clockwise")
+								}
+
+								Button {
+									NSPasteboard.general.clearContents()
+									NSPasteboard.general.setString(ext.id, forType: .string)
+								} label: {
+									Label("Copy Extension ID", systemImage: "doc.on.doc")
+								}
+
+								Divider()
+
+								Button(role: .destructive) {
+									extensionToUninstall = ext
+								} label: {
+									Label("Uninstall", systemImage: "trash")
+								}
+							}
 					}
-					.listStyle(.sidebar)
 				}
+				.listStyle(.sidebar)
 			}
-			.searchable(text: $state.searchQuery, placement: .sidebar, prompt: "Search extensions…")
-			.disabled(!state.isExtensionEnabled)
-
-			Divider()
-
-			sidebarFooter
 		}
+		.searchable(text: $state.searchQuery, placement: .sidebar, prompt: "Search extensions…")
+		.disabled(!state.isExtensionEnabled)
 		.opacity(state.isExtensionEnabled ? 1.0 : 0.45)
 		.saturation(state.isExtensionEnabled ? 1.0 : 0.0)
+		.toolbar(removing: .sidebarToggle)
+		.toolbar {
+			ToolbarItem(placement: .navigation) {
+				Menu {
+					Button {
+						state.openChromeWebStore()
+					} label: {
+						Label("From Chrome Web Store", systemImage: "globe")
+					}
+
+					Button {
+						state.openFirefoxAddons()
+					} label: {
+						Label("From Firefox Add-on Store", systemImage: "flame")
+					}
+
+					Divider()
+
+					Button {
+						state.installFromDisk()
+					} label: {
+						Label("From disk...", systemImage: "internaldrive")
+					}
+				} label: {
+					Image(systemName: "plus")
+				}
+				.menuIndicator(.hidden)
+				.help("Add Extension")
+				.disabled(!state.isExtensionEnabled)
+			}
+		}
 		.onAppear {
 			state.ensureActiveSelection()
 		}
@@ -455,49 +478,6 @@ struct SidebarView: View {
 		}
 	}
 
-	private var sidebarHeader: some View {
-		HStack(alignment: .center) {
-			Text("Extensions")
-				.font(.system(size: 13, weight: .semibold))
-				.foregroundStyle(.primary)
-
-			Spacer()
-
-			Menu {
-				Button {
-					state.openChromeWebStore()
-				} label: {
-					Label("From Chrome Web Store", systemImage: "globe")
-				}
-
-				Button {
-					state.openFirefoxAddons()
-				} label: {
-					Label("From Firefox Add-on Store", systemImage: "flame")
-				}
-
-				Divider()
-
-				Button {
-					state.installFromDisk()
-				} label: {
-					Label("From disk...", systemImage: "internaldrive")
-				}
-			} label: {
-				Image(systemName: "plus")
-					.font(.system(size: 13, weight: .semibold))
-					.frame(width: 22, height: 22)
-					.contentShape(Rectangle())
-			}
-			.menuStyle(.borderlessButton)
-			.menuIndicator(.hidden)
-			.help("Add Extension")
-		}
-		.padding(.horizontal, 16)
-		.padding(.vertical, 10)
-		.background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-	}
-
 	private var emptyListView: some View {
 		VStack(spacing: 12) {
 			Spacer()
@@ -518,33 +498,6 @@ struct SidebarView: View {
 			Spacer()
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
-	}
-
-	private var sidebarFooter: some View {
-		HStack(spacing: 8) {
-			Circle()
-				.fill(state.isExtensionEnabled ? Color.green : Color.red)
-				.frame(width: 7, height: 7)
-
-			Text(state.isExtensionEnabled ? "Safari Extension Active" : "Extension Disabled")
-				.font(.system(size: 11, weight: .medium))
-				.foregroundStyle(.secondary)
-
-			Spacer()
-
-			Button {
-				state.openSafariExtensionSettings()
-			} label: {
-				Image(systemName: "gearshape")
-					.font(.system(size: 12))
-			}
-			.buttonStyle(.plain)
-			.foregroundStyle(.secondary)
-			.help("Open Safari Extension Settings")
-		}
-		.padding(.horizontal, 14)
-		.padding(.vertical, 10)
-		.background(Color(NSColor.controlBackgroundColor).opacity(0.4))
 	}
 }
 
