@@ -328,31 +328,60 @@ public final class ExtensionInstaller: Sendable {
 
 	private func resolveIconDataUrl(in directory: URL, manifest: [String: Any]) -> String? {
 		var candidatePaths: [String] = []
-		let preferredSizes = ["32", "48", "64", "96", "38", "128", "16", "19"]
 
 		func extractPaths(from iconValue: Any?) {
+			guard let iconValue = iconValue else { return }
 			if let dict = iconValue as? [String: Any] {
-				for size in preferredSizes {
-					if let path = dict[size] as? String, !path.isEmpty {
+				let sortedKeys = dict.keys.sorted { k1, k2 in
+					let path1 = (dict[k1] as? String) ?? ""
+					let path2 = (dict[k2] as? String) ?? ""
+					let isSvg1 = path1.lowercased().hasSuffix(".svg")
+					let isSvg2 = path2.lowercased().hasSuffix(".svg")
+					if isSvg1 != isSvg2 {
+						return isSvg1
+					}
+					let s1 = Int(k1) ?? 0
+					let s2 = Int(k2) ?? 0
+					if s1 != s2 {
+						return s1 > s2
+					}
+					return k1 < k2
+				}
+				for key in sortedKeys {
+					if let path = dict[key] as? String, !path.isEmpty,
+						!candidatePaths.contains(path)
+					{
 						candidatePaths.append(path)
 					}
 				}
-				for (_, val) in dict {
-					if let path = val as? String, !path.isEmpty, !candidatePaths.contains(path) {
-						candidatePaths.append(path)
-					}
-				}
-			} else if let str = iconValue as? String, !str.isEmpty {
+			} else if let str = iconValue as? String, !str.isEmpty, !candidatePaths.contains(str) {
 				candidatePaths.append(str)
 			}
 		}
 
+		extractPaths(from: manifest["icons"])
 		if let action = (manifest["action"] as? [String: Any])
 			?? (manifest["browser_action"] as? [String: Any])
+			?? (manifest["page_action"] as? [String: Any])
+			?? (manifest["sidebar_action"] as? [String: Any])
 		{
 			extractPaths(from: action["default_icon"])
 		}
-		extractPaths(from: manifest["icons"])
+
+		if candidatePaths.isEmpty {
+			let fallbackNames = [
+				"icon512.png", "icon256.png", "icon128.png", "icon96.png", "icon64.png",
+				"icon48.png",
+				"icons/icon512.png", "icons/icon256.png", "icons/icon128.png", "icons/icon96.png",
+				"icons/icon64.png", "icons/icon48.png", "images/icon512.png", "images/icon256.png",
+				"images/icon128.png", "images/icon96.png", "images/icon64.png", "images/icon48.png",
+				"icon.svg", "icons/icon.svg", "images/icon.svg",
+				"icon.png", "icons/icon.png", "images/icon.png",
+			]
+			for name in fallbackNames {
+				candidatePaths.append(name)
+			}
+		}
 
 		for candidate in candidatePaths {
 			let cleaned = candidate.hasPrefix("/") ? String(candidate.dropFirst()) : candidate
