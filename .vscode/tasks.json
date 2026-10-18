@@ -7,14 +7,14 @@
 			"type": "shell"
 		},
 		{
-			"command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Debug -destination 'platform=macOS' build",
+			"command": "bash scripts/build.sh Debug",
 			"group": { "isDefault": true, "kind": "build" },
 			"label": "Build (Debug)",
 			"problemMatcher": ["$xcode"],
 			"type": "shell"
 		},
 		{
-			"command": "xcodebuild -project Wirt.xcodeproj -scheme Wirt -configuration Release -destination 'platform=macOS' build",
+			"command": "bash scripts/build.sh Release",
 			"group": "build",
 			"label": "Build (Release)",
 			"problemMatcher": ["$xcode"],
