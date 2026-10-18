@@ -5,6 +5,12 @@ Run Chrome and Firefox extensions directly in Safari on macOS.
 > [!TIP]
 > Wirt is in a very early stage of development. Nothing is garanteed to work.
 
+<div align="center">
+
+<img src="./docs/screenshot-wirt-app.png" width="48%"><img src="./docs/screenshot-wirt-extension.png" width="48%">
+
+</div>
+
 ## Getting Started
 
 1. Enable **Develop > Allow Unsigned Extensions** in Safari.
