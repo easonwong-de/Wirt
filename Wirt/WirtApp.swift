@@ -228,6 +228,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 		return false
 	}
 
+	func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+		return NSSize(
+			width: max(frameSize.width, 760),
+			height: max(frameSize.height, 480)
+		)
+	}
+
 	@objc func showSettings() {
 		NSApp.setActivationPolicy(.regular)
 		setupInterface()
@@ -252,27 +259,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 	}
 
 	private func setupWindow() {
-		let initialSize = NSSize(width: 980, height: 600)
+		let initialSize = NSSize(width: 860, height: 600)
+		let minWindowSize = NSSize(width: 760, height: 480)
 		let window = NSWindow(
 			contentRect: NSRect(origin: .zero, size: initialSize),
 			styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
 			backing: .buffered,
 			defer: false
 		)
-		window.minSize = NSSize(width: 760, height: 480)
 		window.title = "Wirt"
 		window.titleVisibility = .hidden
 		window.titlebarAppearsTransparent = true
+		window.titlebarSeparatorStyle = .none
 		window.toolbarStyle = .unified
-		window.isMovableByWindowBackground = true
+		window.isMovableByWindowBackground = false
 		window.isReleasedWhenClosed = false
 		window.delegate = self
 
 		let hostingView = NSHostingView(rootView: ContentView())
+		hostingView.sizingOptions = []
 		window.contentView = hostingView
+		window.minSize = minWindowSize
+		window.contentMinSize = minWindowSize
 		window.setContentSize(initialSize)
 		self.window = window
-		window.center()
+
+		if let screen = NSScreen.main ?? NSScreen.screens.first {
+			let screenFrame = screen.visibleFrame
+			let x = screenFrame.origin.x + (screenFrame.width - initialSize.width) / 2
+			let y = screenFrame.origin.y + (screenFrame.height - initialSize.height) / 2
+			window.setFrame(NSRect(origin: CGPoint(x: x, y: y), size: initialSize), display: true)
+		} else {
+			window.center()
+		}
 	}
 
 	private func setupMainMenu() {
@@ -340,6 +359,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 			NSMenuItem(
 				title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
 		editMenuItem.submenu = editMenu
+
+		let viewMenuItem = NSMenuItem()
+		mainMenu.addItem(viewMenuItem)
+		let viewMenu = NSMenu(title: "View")
+		let toggleSidebarItem = NSMenuItem(
+			title: "Toggle Sidebar",
+			action: #selector(NSSplitViewController.toggleSidebar(_:)),
+			keyEquivalent: "s")
+		toggleSidebarItem.keyEquivalentModifierMask = [.command, .control]
+		viewMenu.addItem(toggleSidebarItem)
+		viewMenuItem.submenu = viewMenu
 
 		let windowMenuItem = NSMenuItem()
 		mainMenu.addItem(windowMenuItem)
