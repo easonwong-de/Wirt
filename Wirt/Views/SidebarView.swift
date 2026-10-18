@@ -14,7 +14,16 @@ struct SidebarView: View {
 	}
 
 	var body: some View {
-		List(selection: $state.selectedExtensionId) {
+		List(
+			selection: Binding(
+				get: { state.selectedExtensionId },
+				set: { newId in
+					DispatchQueue.main.async {
+						state.selectedExtensionId = newId
+					}
+				}
+			)
+		) {
 			ForEach(state.filteredExtensions) { ext in
 				let isSelected = ext.id.lowercased() == state.selectedExtensionId?.lowercased()
 				SidebarExtensionRow(
@@ -32,7 +41,7 @@ struct SidebarView: View {
 									: Color(NSColor.unemphasizedSelectedContentBackgroundColor))
 								: Color.clear
 						)
-						.padding(.horizontal, 4)
+						.padding(.horizontal, 10)
 				)
 				.swipeActions(edge: .trailing, allowsFullSwipe: false) {
 					Button(role: .destructive) {
@@ -80,6 +89,7 @@ struct SidebarView: View {
 		.searchable(text: $state.searchQuery, placement: .sidebar, prompt: "Search extensions…")
 		.toolbar(removing: columnVisibility != .detailOnly ? .sidebarToggle : nil)
 		.toolbar {
+
 			if columnVisibility != .detailOnly {
 				Spacer()
 

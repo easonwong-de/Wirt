@@ -15,16 +15,112 @@ final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
 	}
 }
 
+public final class WebViewHostView: NSView {
+	public override init(frame frameRect: NSRect) {
+		super.init(frame: frameRect)
+		self.clipsToBounds = true
+	}
+
+	required init?(coder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
+	}
+
+	public override func resizeSubviews(withOldSize oldSize: NSSize) {
+		guard bounds.width > 50, bounds.height > 50 else { return }
+		super.resizeSubviews(withOldSize: oldSize)
+		if subviews.count == 1, let wv = subviews.first {
+			wv.frame = bounds
+		} else if subviews.count == 2,
+			let ins = subviews.first(where: {
+				String(describing: type(of: $0)).contains("Inspector")
+			}),
+			let wv = subviews.first(where: {
+				!String(describing: type(of: $0)).contains("Inspector")
+			})
+		{
+			if ins.frame.minX == 0 && ins.frame.height < bounds.height {
+				let insH = min(ins.frame.height, bounds.height - 50)
+				ins.frame = NSRect(x: 0, y: 0, width: bounds.width, height: insH)
+				wv.frame = NSRect(
+					x: 0, y: insH, width: bounds.width, height: bounds.height - insH)
+			} else if ins.frame.minX > 0 {
+				let insW = min(ins.frame.width, bounds.width - 50)
+				wv.frame = NSRect(
+					x: 0, y: 0, width: bounds.width - insW, height: bounds.height)
+				ins.frame = NSRect(
+					x: bounds.width - insW, y: 0, width: insW, height: bounds.height)
+			}
+		}
+	}
+}
+
+public final class HostContainerView: NSView {
+	public weak var hostedView: NSView?
+
+	public override init(frame frameRect: NSRect) {
+		super.init(frame: frameRect)
+		self.clipsToBounds = true
+	}
+
+	required init?(coder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
+	}
+
+	public override func layout() {
+		super.layout()
+		if bounds.width > 50, bounds.height > 50, let hostedView = hostedView {
+			hostedView.frame = bounds
+		}
+	}
+}
+
 @MainActor
 public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessageHandler {
 	public static let shared = ExtensionRuntime()
 
 	private var backgroundWebViews: [String: WKWebView] = [:]
+	private var backgroundHostViews: [String: WebViewHostView] = [:]
 	private var pendingReplies: [String: ([String: Any]) -> Void] = [:]
 	public private(set) var consoleLogs: [String: [ConsoleLogEntry]] = [:]
 
 	public func getBackgroundWebView(for extensionId: String) -> WKWebView? {
-		return backgroundWebViews[extensionId] ?? backgroundWebViews[extensionId.lowercased()]
+		return backgroundWebViews[extensionId]
+			?? backgroundWebViews.first(where: { $0.key.lowercased() == extensionId.lowercased() })?
+			.value
+	}
+
+	public func getBackgroundHostView(for extensionId: String) -> WebViewHostView? {
+		return backgroundHostViews[extensionId]
+			?? backgroundHostViews.first(where: {
+				$0.key.lowercased() == extensionId.lowercased()
+			})?.value
+	}
+
+	public func ensureInspectorStartsAttached() {
+		UserDefaults.standard.set(
+			true,
+			forKey: "__WebInspectorPageGroupLevel1__.WebKit2InspectorStartsAttached"
+		)
+		for key in UserDefaults.standard.dictionaryRepresentation().keys
+		where key.hasSuffix("WebKit2InspectorStartsAttached") {
+			UserDefaults.standard.set(true, forKey: key)
+		}
+	}
+
+	public func showInspector(for webView: WKWebView) {
+		ensureInspectorStartsAttached()
+		guard let inspector = webView.value(forKey: "_inspector") as? NSObject else { return }
+		if inspector.responds(to: Selector(("show"))) {
+			inspector.perform(Selector(("show")))
+		}
+		if inspector.responds(to: Selector(("attach"))) {
+			inspector.perform(Selector(("attach")))
+		}
+		DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+			if inspector.responds(to: Selector(("attach"))) {
+				inspector.perform(Selector(("attach")))
+			}
+		}
 	}
 
 	public func getConsoleLogs(for extensionId: String) -> [ConsoleLogEntry] {
@@ -95,12 +191,17 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 	}
 
 	public func startBackgroundRuntime(for descriptor: ExtensionDescriptor, directory: URL) {
-		guard let bg = descriptor.backgroundEntry, !bg.scripts.isEmpty else { return }
+		guard let bg = descriptor.backgroundEntry, !bg.scripts.isEmpty || bg.page != nil else {
+			return
+		}
+
+		ensureInspectorStartsAttached()
 
 		let config = WKWebViewConfiguration()
 		config.setURLSchemeHandler(self, forURLScheme: "ext-bg")
 		config.setURLSchemeHandler(self, forURLScheme: "ext-ui")
 		config.preferences.setValue(false, forKey: "webSecurityEnabled")
+		config.preferences.setValue(true, forKey: "developerExtrasEnabled")
 		config.defaultWebpagePreferences.allowsContentJavaScript = true
 
 		let userContent = config.userContentController
@@ -125,29 +226,57 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 			userContent.addUserScript(userScript)
 		}
 
-		let webView = WKWebView(frame: .zero, configuration: config)
+		let initialRect = NSRect(x: 0, y: 0, width: 800, height: 600)
+		let hostView = WebViewHostView(frame: initialRect)
+
+		let webView = WKWebView(frame: initialRect, configuration: config)
+		webView.autoresizingMask = [.width, .height]
+		if #available(macOS 12.0, *) {
+			webView.underPageBackgroundColor = .windowBackgroundColor
+		}
 		if #available(macOS 13.3, *) {
 			webView.isInspectable = true
 		}
+		hostView.addSubview(webView)
 		backgroundWebViews[descriptor.id] = webView
+		backgroundHostViews[descriptor.id] = hostView
 
-		let scriptTags = bg.scripts.map { script in
-			if bg.isModule {
-				return "<script type=\"module\" src=\"\(script)\"></script>"
+		if let page = bg.page {
+			if let url = URL(string: "ext-bg://\(descriptor.id)/\(page)") {
+				webView.load(URLRequest(url: url))
 			}
-			return "<script src=\"\(script)\"></script>"
-		}.joined(separator: "\n")
+		} else {
+			let scriptTags = bg.scripts.map { script in
+				if bg.isModule {
+					return "<script type=\"module\" src=\"\(script)\"></script>"
+				}
+				return "<script src=\"\(script)\"></script>"
+			}.joined(separator: "\n")
 
-		let syntheticHtml = """
-			<!DOCTYPE html>
-			<html>
-			<head><meta charset="utf-8"></head>
-			<body>
-			\(scriptTags)
-			</body>
-			</html>
-			"""
-		webView.loadHTMLString(syntheticHtml, baseURL: URL(string: "ext-bg://\(descriptor.id)/")!)
+			let syntheticHtml = """
+				<!DOCTYPE html>
+				<html>
+				<head>
+				<meta charset="utf-8">
+				<meta name="color-scheme" content="light dark">
+				<style>
+					html, body {
+						width: 100%;
+						height: 100%;
+						margin: 0;
+						padding: 0;
+						background-color: transparent;
+					}
+				</style>
+				</head>
+				<body>
+				\(scriptTags)
+				</body>
+				</html>
+				"""
+			webView.loadHTMLString(
+				syntheticHtml, baseURL: URL(string: "ext-bg://\(descriptor.id)/")!)
+		}
 	}
 
 	public func stopBackgroundRuntime(for extensionId: String) {
@@ -157,6 +286,9 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 			if let webView = backgroundWebViews.removeValue(forKey: key) {
 				webView.stopLoading()
 				webView.configuration.userContentController.removeAllScriptMessageHandlers()
+			}
+			if let hostView = backgroundHostViews.removeValue(forKey: key) {
+				hostView.removeFromSuperview()
 			}
 		}
 	}
@@ -218,15 +350,39 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 	}
 
 	public func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
-		guard let url = urlSchemeTask.request.url, let extId = url.host else {
+		guard let url = urlSchemeTask.request.url else {
 			urlSchemeTask.didFailWithError(URLError(.badURL))
 			return
 		}
 
-		let baseDir = ExtensionInstaller.shared.storageDirectory.appendingPathComponent(
+		let extId: String
+		if let user = url.user, !user.isEmpty, let host = url.host {
+			extId = "\(user)@\(host)"
+		} else if let host = url.host, !host.isEmpty {
+			extId = host
+		} else {
+			urlSchemeTask.didFailWithError(URLError(.badURL))
+			return
+		}
+
+		var baseDir = ExtensionInstaller.shared.storageDirectory.appendingPathComponent(
 			extId, isDirectory: true
 		).standardizedFileURL
-		let filePath = baseDir.appendingPathComponent(url.path).standardizedFileURL
+
+		if !FileManager.default.fileExists(atPath: baseDir.path) {
+			if let items = try? FileManager.default.contentsOfDirectory(
+				at: ExtensionInstaller.shared.storageDirectory, includingPropertiesForKeys: nil)
+			{
+				if let matched = items.first(where: {
+					$0.lastPathComponent.caseInsensitiveCompare(extId) == .orderedSame
+				}) {
+					baseDir = matched.standardizedFileURL
+				}
+			}
+		}
+
+		let relativePath = url.path.hasPrefix("/") ? String(url.path.dropFirst()) : url.path
+		let filePath = baseDir.appendingPathComponent(relativePath).standardizedFileURL
 
 		let baseComponents = baseDir.pathComponents
 		let fileComponents = filePath.pathComponents

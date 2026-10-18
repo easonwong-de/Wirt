@@ -33,14 +33,28 @@ struct DetailContainerView: View {
 		.ignoresSafeArea(.all, edges: .top)
 		.frame(minWidth: 480, maxWidth: .infinity, maxHeight: .infinity)
 		.onChange(of: state.selectedTab) { _ in
-			isContentScrolled = false
+			DispatchQueue.main.async {
+				isContentScrolled = false
+			}
 		}
 		.onChange(of: extensionDescriptor.id) { _ in
-			isContentScrolled = false
+			DispatchQueue.main.async {
+				isContentScrolled = false
+			}
 		}
 		.toolbar {
 			ToolbarItem(placement: .principal) {
-				Picker("", selection: $state.selectedTab) {
+				Picker(
+					"",
+					selection: Binding(
+						get: { state.selectedTab },
+						set: { newTab in
+							DispatchQueue.main.async {
+								state.selectedTab = newTab
+							}
+						}
+					)
+				) {
 					ForEach(ExtensionDetailTab.allCases) { tab in
 						Label(tab.rawValue, systemImage: tab.icon).tag(tab)
 					}

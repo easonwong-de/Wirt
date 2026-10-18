@@ -260,7 +260,7 @@ public final class ExtensionInstaller: Sendable {
 				let isModule = (bg["type"] as? String) == "module"
 				backgroundEntry = BackgroundEntry(scripts: scripts, isModule: isModule)
 			} else if let page = bg["page"] as? String {
-				backgroundEntry = BackgroundEntry(scripts: [page], isModule: false)
+				backgroundEntry = BackgroundEntry(scripts: [], isModule: false, page: page)
 			}
 		}
 

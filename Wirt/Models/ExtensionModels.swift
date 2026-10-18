@@ -79,10 +79,12 @@ public struct ConsoleLogEntry: Identifiable, Sendable {
 public struct BackgroundEntry: Codable, Sendable {
 	public let scripts: [String]
 	public let isModule: Bool
+	public let page: String?
 
-	public init(scripts: [String], isModule: Bool) {
+	public init(scripts: [String], isModule: Bool, page: String? = nil) {
 		self.scripts = scripts
 		self.isModule = isModule
+		self.page = page
 	}
 }
 

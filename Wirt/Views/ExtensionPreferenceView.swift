@@ -2,11 +2,18 @@ import AppKit
 import SwiftUI
 import WebKit
 
+// MARK: - WebView Reference Holder
+
+final class WebViewHolder {
+	weak var webView: WKWebView?
+}
+
 // MARK: - Tab 2: Extension Preference View (Options Page)
 
 struct ExtensionPreferenceView: View {
 	let ext: ExtensionDescriptor
 	@State private var reloadToken = UUID()
+	@State private var webViewHolder = WebViewHolder()
 
 	var body: some View {
 		VStack(spacing: 0) {
@@ -15,8 +22,21 @@ struct ExtensionPreferenceView: View {
 					Text("ext-ui://\(ext.id)/\(optionsPage)")
 						.font(.system(size: 11, design: .monospaced))
 						.foregroundStyle(.secondary)
+						.lineLimit(1)
+						.truncationMode(.middle)
 
 					Spacer()
+
+					Button {
+						if let webView = webViewHolder.webView {
+							ExtensionRuntime.shared.showInspector(for: webView)
+						}
+					} label: {
+						Label("Inspect", systemImage: "sparkles.rectangle.stack")
+					}
+					.buttonStyle(.bordered)
+					.controlSize(.small)
+					.help("Open Web Inspector")
 
 					Button {
 						reloadToken = UUID()
@@ -35,8 +55,10 @@ struct ExtensionPreferenceView: View {
 				OptionsWebViewRepresentable(
 					extensionId: ext.id,
 					optionsPage: optionsPage,
-					reloadToken: reloadToken
+					reloadToken: reloadToken,
+					holder: webViewHolder
 				)
+				.id("\(ext.id)-\(reloadToken)")
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 			} else {
 				noOptionsPageView
@@ -73,12 +95,16 @@ struct OptionsWebViewRepresentable: NSViewRepresentable {
 	let extensionId: String
 	let optionsPage: String
 	let reloadToken: UUID
+	let holder: WebViewHolder
 
-	func makeNSView(context: Context) -> WKWebView {
+	func makeNSView(context: Context) -> WebViewHostView {
+		ExtensionRuntime.shared.ensureInspectorStartsAttached()
+
 		let config = WKWebViewConfiguration()
 		config.setURLSchemeHandler(ExtensionRuntime.shared, forURLScheme: "ext-ui")
 		config.setURLSchemeHandler(ExtensionRuntime.shared, forURLScheme: "ext-bg")
 		config.preferences.setValue(false, forKey: "webSecurityEnabled")
+		config.preferences.setValue(true, forKey: "developerExtrasEnabled")
 		config.defaultWebpagePreferences.allowsContentJavaScript = true
 
 		let userContent = config.userContentController
@@ -105,21 +131,31 @@ struct OptionsWebViewRepresentable: NSViewRepresentable {
 			userContent.addUserScript(userScript)
 		}
 
-		let webView = WKWebView(frame: .zero, configuration: config)
+		let initialRect = NSRect(x: 0, y: 0, width: 800, height: 600)
+		let container = WebViewHostView(frame: initialRect)
+
+		let webView = WKWebView(frame: initialRect, configuration: config)
+		webView.autoresizingMask = [.width, .height]
+		if #available(macOS 12.0, *) {
+			webView.underPageBackgroundColor = .windowBackgroundColor
+		}
 		if #available(macOS 13.3, *) {
 			webView.isInspectable = true
 		}
 		if let url = URL(string: "ext-ui://\(extensionId)/\(optionsPage)") {
 			webView.load(URLRequest(url: url))
 		}
-		return webView
+
+		container.addSubview(webView)
+		holder.webView = webView
+		return container
 	}
 
-	func updateNSView(_ nsView: WKWebView, context: Context) {
+	func updateNSView(_ nsView: WebViewHostView, context: Context) {
 		if context.coordinator.lastReloadToken != reloadToken {
 			context.coordinator.lastReloadToken = reloadToken
 			if let url = URL(string: "ext-ui://\(extensionId)/\(optionsPage)") {
-				nsView.load(URLRequest(url: url))
+				holder.webView?.load(URLRequest(url: url))
 			}
 		}
 	}

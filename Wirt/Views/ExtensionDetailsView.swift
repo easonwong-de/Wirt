@@ -87,7 +87,7 @@ struct ExtensionDetailsView: View {
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
 
-			Spacer(minLength: 16)
+			Spacer(minLength: 4)
 
 			VStack(alignment: .trailing, spacing: 8) {
 				Button(role: .destructive) {
@@ -275,15 +275,19 @@ struct ExtensionDetailsView: View {
 						Text("Type:")
 							.font(.system(size: 11, weight: .semibold))
 							.foregroundStyle(.secondary)
-						Text(bg.isModule ? "Module Service Worker" : "Standard Script")
-							.font(.system(size: 11))
+						Text(
+							bg.page != nil
+								? "Background Page"
+								: (bg.isModule ? "Module Service Worker" : "Standard Script")
+						)
+						.font(.system(size: 11))
 					}
 
 					HStack(spacing: 6) {
-						Text("Scripts:")
+						Text(bg.page != nil ? "Page:" : "Scripts:")
 							.font(.system(size: 11, weight: .semibold))
 							.foregroundStyle(.secondary)
-						Text(bg.scripts.joined(separator: ", "))
+						Text(bg.page ?? bg.scripts.joined(separator: ", "))
 							.font(.system(size: 11, design: .monospaced))
 					}
 
@@ -508,7 +512,11 @@ extension View {
 			self.onScrollGeometryChange(for: Bool.self) { geo in
 				geo.contentOffset.y + geo.contentInsets.top > 0
 			} action: { _, scrolled in
-				isScrolled.wrappedValue = scrolled
+				if isScrolled.wrappedValue != scrolled {
+					DispatchQueue.main.async {
+						isScrolled.wrappedValue = scrolled
+					}
+				}
 			}
 		} else {
 			self.coordinateSpace(name: "detailScroll")
@@ -521,7 +529,12 @@ extension View {
 					}
 				)
 				.onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-					isScrolled.wrappedValue = offset < -1
+					let scrolled = offset < -1
+					if isScrolled.wrappedValue != scrolled {
+						DispatchQueue.main.async {
+							isScrolled.wrappedValue = scrolled
+						}
+					}
 				}
 		}
 	}
