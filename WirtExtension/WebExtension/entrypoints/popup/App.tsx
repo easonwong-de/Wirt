@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { DisconnectedView } from "@/components/DisconnectedView";
+import { EmptyView } from "@/components/EmptyView";
 import { ExtensionItem } from "@/components/ExtensionItem";
+import { Header } from "@/components/Header";
 import { Icon } from "@/components/Icon";
+import { PopupFrame } from "@/components/PopupFrame";
 import type {
 	ActiveTab,
 	ExtensionDescriptor,
@@ -106,101 +110,31 @@ export const App: React.FC = () => {
 		<div className={styles.container}>
 			{activeExtension !== null ? (
 				<>
-					<header className={styles.header}>
-						<div className={styles.titleGroup}>
-							<div className={styles.titleIcon}>
-								{activeExtension.iconUrl ? (
-									<img
-										src={activeExtension.iconUrl}
-										alt=""
-										className={styles.iconImage}
-									/>
-								) : (
-									<Icon type="extension" size={16} />
-								)}
-							</div>
-							<span className={styles.headerTitle}>
-								{activeExtension.name}
-							</span>
-						</div>
-						<button
-							type="button"
-							className={styles.iconButton}
-							onClick={() => setActiveExtension(null)}
-							title={i18n.t("closeTooltip")}
-							aria-label={i18n.t("closeTooltip")}
-						>
-							<Icon type="close" size={11} />
-						</button>
-					</header>
-					<hr className={styles.divider} />
-					<div className={styles.frameContainer}>
-						<iframe
-							className={styles.popupFrame}
-							srcDoc={popupHtml}
-							sandbox="allow-scripts allow-forms allow-same-origin"
-							title={activeExtension.name}
-						/>
-					</div>
+					<Header
+						title={activeExtension.name}
+						iconUrl={activeExtension.iconUrl}
+						onActionClick={() => setActiveExtension(null)}
+						actionIcon={<Icon type="close" size={11} />}
+						actionTooltip={i18n.t("closeTooltip")}
+					/>
+					<PopupFrame
+						srcDoc={popupHtml}
+						title={activeExtension.name}
+					/>
 				</>
 			) : connectionState === "disconnected" ? (
-				<div className={styles.disconnectedContainer}>
-					<div className={styles.disconnectedIcon}>
-						<Icon type="application" size={40} />
-					</div>
-					<div className={styles.disconnectedStatusRow}>
-						<span className={styles.statusIndicator} />
-						<span className={styles.disconnectedStatusText}>
-							{i18n.t("hostNotConnectedTitle")}
-						</span>
-						<button
-							type="button"
-							className={styles.iconButton}
-							onClick={() => void loadExtensions()}
-							title={i18n.t("refreshTooltip")}
-							aria-label={i18n.t("refreshTooltip")}
-						>
-							<Icon type="reload" size={12} />
-						</button>
-					</div>
-					<span className={styles.disconnectedInstruction}>
-						{i18n.t("hostNotConnectedInstruction")}
-					</span>
-				</div>
+				<DisconnectedView onRefresh={() => void loadExtensions()} />
 			) : connectionState === "connected" ? (
 				<>
-					<header className={styles.header}>
-						<div className={styles.titleGroup}>
-							<div className={styles.titleIcon}>
-								<Icon type="extension" size={16} />
-							</div>
-							<span className={styles.headerTitle}>
-								{i18n.t("installedExtensionsTitle")}
-							</span>
-						</div>
-						<button
-							type="button"
-							className={styles.iconButton}
-							onClick={() => void handleOpenHostApp()}
-							title={i18n.t("openHostAppTooltip")}
-							aria-label={i18n.t("openHostAppTooltip")}
-						>
-							<Icon type="cog" size={13} />
-						</button>
-					</header>
-					<hr className={styles.divider} />
+					<Header
+						title={i18n.t("installedExtensionsTitle")}
+						icon={<Icon type="extension" size={16} />}
+						onActionClick={() => void handleOpenHostApp()}
+						actionIcon={<Icon type="cog" size={13} />}
+						actionTooltip={i18n.t("openHostAppTooltip")}
+					/>
 					{extensions.length === 0 ? (
-						<div className={styles.emptyContainer}>
-							<div className={styles.emptyIcon}>
-								<Icon type="empty" size={38} />
-							</div>
-							<span className={styles.emptyTitle}>
-								{i18n.t("emptyExtensionsTitle")}
-							</span>
-							<span className={styles.emptySubtitle}>
-								{i18n.t("emptyExtensionsSubtitle")}
-							</span>
-						</div>
+						<EmptyView />
 					) : (
 						<div className={styles.extensionList}>
 							{extensions.map((ext) => (

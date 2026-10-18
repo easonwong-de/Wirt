@@ -1,0 +1,10 @@
+.frameContainer {
+	width: 100%;
+	height: 480px;
+}
+
+.popupFrame {
+	border: none;
+	width: 100%;
+	height: 100%;
+}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Icon } from "@/components/Icon";
-import styles from "@/entrypoints/popup/App.module.css";
 import type { ExtensionDescriptor } from "@/types/extension";
+import styles from "./ExtensionItem.module.css";
 
 export interface ExtensionItemProps {
 	readonly extension: ExtensionDescriptor;

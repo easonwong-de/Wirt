@@ -1,0 +1,70 @@
+.disconnectedContainer {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 12px;
+	padding: 24px 20px;
+	text-align: center;
+}
+
+.disconnectedIcon {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: light-dark(rgba(0, 0, 0, 0.65), rgba(255, 255, 255, 0.7));
+}
+
+.disconnectedStatusRow {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 6px;
+}
+
+.statusIndicator {
+	display: inline-block;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background-color: #ff3b30;
+	width: 7px;
+	height: 7px;
+}
+
+.disconnectedStatusText {
+	color: light-dark(#1d1d1f, #f5f5f7);
+	font-weight: 700;
+	font-size: 13px;
+}
+
+.iconButton {
+	display: inline-flex;
+	flex-shrink: 0;
+	justify-content: center;
+	align-items: center;
+	opacity: 1;
+	transition: opacity 0.15s ease;
+	cursor: pointer;
+	margin: 0;
+	border: none;
+	background: transparent !important;
+	padding: 0;
+	width: 18px;
+	height: 18px;
+	color: light-dark(#1d1d1f, #f5f5f7);
+}
+
+.iconButton:hover {
+	opacity: 0.7;
+	background: transparent !important;
+}
+
+.iconButton:active {
+	opacity: 0.4;
+}
+
+.disconnectedInstruction {
+	color: light-dark(rgba(0, 0, 0, 0.65), rgba(255, 255, 255, 0.7));
+	font-size: 11px;
+	line-height: 1.35;
+}
