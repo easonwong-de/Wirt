@@ -1,7 +1,7 @@
 {
 	"tasks": [
 		{
-			"command": "swift-format format -i -r Wirt WirtExtension && (bun --cwd WirtExtension/WebExtension prettier --write . 2>&1 | grep -v '(unchanged)' || true)",
+			"command": "bash scripts/format.sh",
 			"label": "Format Code",
 			"problemMatcher": [],
 			"type": "shell"
