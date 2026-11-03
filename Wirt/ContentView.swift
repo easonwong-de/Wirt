@@ -72,9 +72,13 @@ struct ContentView: View {
 				instructionLine(
 					number: "2.",
 					text: "In Safari Develop menu, select \"Allow Unsigned Extensions\".")
+				let appName =
+					Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String
+					?? Bundle.main.infoDictionary?["CFBundleName"] as? String
+					?? "Wirt"
 				instructionLine(
 					number: "3.",
-					text: "In Safari Settings > Extensions, tick \"Wirt\".")
+					text: "In Safari Settings > Extensions, tick \"\(appName)\".")
 				instructionLine(
 					number: "4.",
 					text: "Select \"Always Allow on Every Website…\".")

@@ -33,7 +33,8 @@ final class AppState: ObservableObject {
 	@Published var selectedTab: ExtensionDetailTab = .details
 	@Published var searchQuery: String = ""
 
-	private let extensionBundleId = "de.easonwong.Wirt.Extension"
+	private let extensionBundleId =
+		(Bundle.main.bundleIdentifier ?? "de.easonwong.Wirt") + ".Extension"
 	private var cancellables = Set<AnyCancellable>()
 
 	init() {

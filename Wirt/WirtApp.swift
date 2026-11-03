@@ -5,7 +5,13 @@ import os.log
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-	private static let agentPlistName = "de.easonwong.Wirt.agent.plist"
+	#if DEBUG
+		private static let agentPlistName = "de.easonwong.Wirt.debug.agent.plist"
+		private static let agentLabel = "de.easonwong.Wirt.debug.agent"
+	#else
+		private static let agentPlistName = "de.easonwong.Wirt.agent.plist"
+		private static let agentLabel = "de.easonwong.Wirt.agent"
+	#endif
 	private static let backgroundArgument = "--background"
 
 	private var window: NSWindow?
@@ -22,8 +28,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 	func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
 		return true
 	}
-
-	private static let agentLabel = "de.easonwong.Wirt.agent"
 
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		cleanStaleExtensions()
@@ -111,9 +115,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 					"WirtExtension.appex", isDirectory: true)
 			else { return }
 
+			let extensionBundleId =
+				(Bundle.main.bundleIdentifier ?? "de.easonwong.Wirt") + ".Extension"
 			let process = Process()
 			process.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
-			process.arguments = ["-m", "-A", "-v", "-i", "de.easonwong.Wirt.Extension"]
+			process.arguments = ["-m", "-A", "-v", "-i", extensionBundleId]
 			let pipe = Pipe()
 			process.standardOutput = pipe
 			do {
@@ -259,6 +265,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 	}
 
 	private func setupWindow() {
+		let appName =
+			Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String
+			?? Bundle.main.infoDictionary?["CFBundleName"] as? String
+			?? "Wirt"
 		let initialSize = NSSize(width: 860, height: 600)
 		let minWindowSize = NSSize(width: 760, height: 480)
 		let window = NSWindow(
@@ -267,7 +277,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 			backing: .buffered,
 			defer: false
 		)
-		window.title = "Wirt"
+		window.title = appName
 		window.titleVisibility = .hidden
 		window.titlebarAppearsTransparent = true
 		window.titlebarSeparatorStyle = .none
@@ -295,6 +305,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 	}
 
 	private func setupMainMenu() {
+		let appName =
+			Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String
+			?? Bundle.main.infoDictionary?["CFBundleName"] as? String
+			?? "Wirt"
 		let mainMenu = NSMenu()
 
 		let appMenuItem = NSMenuItem()
@@ -302,7 +316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 		let appMenu = NSMenu()
 		appMenu.addItem(
 			NSMenuItem(
-				title: "About Wirt",
+				title: "About \(appName)",
 				action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
 				keyEquivalent: ""))
 		appMenu.addItem(NSMenuItem.separator())
@@ -315,7 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 		appMenu.addItem(NSMenuItem.separator())
 		appMenu.addItem(
 			NSMenuItem(
-				title: "Hide Wirt",
+				title: "Hide \(appName)",
 				action: #selector(NSApplication.hide(_:)),
 				keyEquivalent: "h"))
 		let hideOthersItem = NSMenuItem(
@@ -331,14 +345,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 				keyEquivalent: ""))
 		appMenu.addItem(NSMenuItem.separator())
 		let closeWirtItem = NSMenuItem(
-			title: "Close Wirt",
+			title: "Close \(appName)",
 			action: #selector(quitApp),
 			keyEquivalent: "q")
 		closeWirtItem.target = self
 		appMenu.addItem(closeWirtItem)
 
 		let terminateItem = NSMenuItem(
-			title: "Quit Wirt & Stop Background Service",
+			title: "Quit \(appName) & Stop Background Service",
 			action: #selector(terminateEntireApp),
 			keyEquivalent: "q")
 		terminateItem.keyEquivalentModifierMask = [.command, .option]

@@ -69,7 +69,7 @@ sequenceDiagram
     Agent->>Agent: windowShouldClose()
 ```
 
-1. **Launch Agent Registration:** On initial startup, the host registers `de.easonwong.Wirt.agent.plist` through `SMAppService.agent(plistName:)`. The plist assigns ownership of the Mach service `de.easonwong.Wirt.mach` to `launchd`.
+1. **Launch Agent Registration:** On initial startup, the host registers the launch agent (`de.easonwong.Wirt.agent.plist` for release or `de.easonwong.Wirt.debug.agent.plist` for debug) through `SMAppService.agent(plistName:)`. The plist assigns ownership of the Mach service (`de.easonwong.Wirt.mach` or `de.easonwong.Wirt.debug.mach`) to `launchd`.
 2. **On-Demand Activation:** When Safari sends a request, `ExtensionHandler` resolves the Mach service. If the host is not running, `launchd` starts `Wirt` with `--background`.
 3. **Automatic Runtime Boot:** On application startup (either foreground or `--background`), `ExtensionRuntime.bootInstalledExtensions()` scans the storage directory and launches background WebViews for all installed extensions.
 4. **Single-Instance Hand-off:** When a user launches `Wirt.app` directly, the new instance registers the agent and sends an XPC `showSettings()` call to the active Mach service. The launcher then terminates itself immediately.
@@ -293,5 +293,5 @@ flowchart LR
     - Firefox add-ons: Read `browser_specific_settings.gecko.id` or `applications.gecko.id` from `manifest.json`.
     - Chrome extensions: Derived from download URL query parameters (`x=id=...` or `id=...`) or computed via SHA-256 base32 hashing of `manifest.json`'s `key` field.
     - Identifiers are sanitized with `^[a-zA-Z0-9._@-]+$`.
-4. **Atomic Commit:** The staging directory is moved atomically into `~/Library/Application Support/Wirt/Extensions/<canonical_id>/`.
-5. **Key-Value Storage Persistence:** `ExtensionStorage` provides thread-safe, atomic key-value persistence for `chrome.storage.local` and `chrome.storage.sync` under `~/Library/Application Support/Wirt/Storage/<canonical_id>.json`.
+4. **Atomic Commit:** The staging directory is moved atomically into `~/Library/Application Support/<Wirt|WirtDebug>/Extensions/<canonical_id>/`.
+5. **Key-Value Storage Persistence:** `ExtensionStorage` provides thread-safe, atomic key-value persistence for `chrome.storage.local` and `chrome.storage.sync` under `~/Library/Application Support/<Wirt|WirtDebug>/Storage/<canonical_id>.json`.

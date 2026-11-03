@@ -2,6 +2,12 @@ import SafariServices
 import os.log
 
 class ExtensionHandler: NSObject, NSExtensionRequestHandling {
+	#if DEBUG
+		private static let hostAppName = "Wirt (Debug)"
+	#else
+		private static let hostAppName = "Wirt"
+	#endif
+
 	func beginRequest(with context: NSExtensionContext) {
 		guard let item = context.inputItems.first as? NSExtensionItem,
 			let message = item.userInfo?[SFExtensionMessageKey] as? [String: Any]
@@ -42,11 +48,14 @@ class ExtensionHandler: NSObject, NSExtensionRequestHandling {
 				os_log(
 					.error, "ExtensionHandler XPC proxy error: %@",
 					error.localizedDescription)
-				finish(with: ["error": "Wirt is not running. Please open the Wirt app."])
+				finish(with: [
+					"error":
+						"\(Self.hostAppName) is not running. Please open the \(Self.hostAppName) app."
+				])
 			}) as? HostXPCProtocol
 		else {
 			os_log(.error, "ExtensionHandler failed to cast XPC proxy")
-			finish(with: ["error": "Failed to connect to Wirt."])
+			finish(with: ["error": "Failed to connect to \(Self.hostAppName)."])
 			return
 		}
 

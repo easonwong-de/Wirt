@@ -1,7 +1,11 @@
 import Foundation
 
 public enum HostXPC {
-	public nonisolated static let serviceName = "de.easonwong.Wirt.mach"
+	#if DEBUG
+		public nonisolated static let serviceName = "de.easonwong.Wirt.debug.mach"
+	#else
+		public nonisolated static let serviceName = "de.easonwong.Wirt.mach"
+	#endif
 }
 
 @objc(HostXPCProtocol)

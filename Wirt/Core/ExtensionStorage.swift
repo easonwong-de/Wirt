@@ -7,15 +7,20 @@ public final class ExtensionStorage: Sendable {
 	public let baseDirectory: URL
 
 	private let queue = DispatchQueue(
-		label: "de.easonwong.Wirt.ExtensionStorage", attributes: .concurrent)
+		label: "\(HostXPC.serviceName).ExtensionStorage", attributes: .concurrent)
 
 	private init() {
 		let appSupport =
 			FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
 			?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(
 				"Library/Application Support")
+		#if DEBUG
+			let subDirectory = "WirtDebug"
+		#else
+			let subDirectory = "Wirt"
+		#endif
 		let storageDir = appSupport.appendingPathComponent(
-			"Wirt/Storage", isDirectory: true)
+			"\(subDirectory)/Storage", isDirectory: true)
 		try? FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
 		self.baseDirectory = storageDir
 	}

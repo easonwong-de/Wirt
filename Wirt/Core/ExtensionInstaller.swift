@@ -11,8 +11,13 @@ public final class ExtensionInstaller: Sendable {
 			FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
 			?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(
 				"Library/Application Support")
+		#if DEBUG
+			let subDirectory = "WirtDebug"
+		#else
+			let subDirectory = "Wirt"
+		#endif
 		let hostDir = appSupport.appendingPathComponent(
-			"Wirt/Extensions", isDirectory: true)
+			"\(subDirectory)/Extensions", isDirectory: true)
 		try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
 		self.storageDirectory = hostDir
 	}
