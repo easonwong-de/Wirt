@@ -1,6 +1,5 @@
 extName: Wirt
-extDescription:
-  Host and transportation layer for Chrome and Firefox extensions in Safari
+extDescription: Host and transportation layer for Chrome and Firefox extensions in Safari
 hostNotConnectedTitle: Host App Not Connected
 hostNotConnectedInstruction: Open Wirt to connect.
 installedExtensionsTitle: Installed Extensions

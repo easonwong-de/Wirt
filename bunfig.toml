@@ -1,0 +1,7 @@
+[fmt]
+useTabs = true
+tabWidth = 4
+
+[[fmt.overrides]]
+files = ["*.yml", "*.yaml"]
+options = { useTabs = false, tabWidth = 2 }
