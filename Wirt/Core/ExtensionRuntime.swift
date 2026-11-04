@@ -242,7 +242,10 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 		backgroundHostViews[descriptor.id] = hostView
 
 		if let page = bg.page {
-			if let url = URL(string: "ext-bg://\(descriptor.id)/\(page)") {
+			let encodedId =
+				descriptor.id.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
+				?? descriptor.id
+			if let url = URL(string: "ext-bg://\(encodedId)/\(page)") {
 				webView.load(URLRequest(url: url))
 			}
 		} else {
@@ -274,8 +277,11 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 				</body>
 				</html>
 				"""
+			let encodedId =
+				descriptor.id.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
+				?? descriptor.id
 			webView.loadHTMLString(
-				syntheticHtml, baseURL: URL(string: "ext-bg://\(descriptor.id)/")!)
+				syntheticHtml, baseURL: URL(string: "ext-bg://\(encodedId)/")!)
 		}
 	}
 
@@ -335,6 +341,60 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 				}
 			}
 		}
+	}
+
+	public func dispatchPortConnect(
+		extensionId: String,
+		portId: String,
+		name: String,
+		sender: [String: Any]
+	) {
+		guard let webView = backgroundWebViews[extensionId] else { return }
+		let payload: [String: Any] = [
+			"portId": portId,
+			"name": name,
+			"sender": sender,
+		]
+		guard let data = try? JSONSerialization.data(withJSONObject: payload),
+			let json = String(data: data, encoding: .utf8)
+		else { return }
+		let script =
+			"if (window.__wirtDispatchPortConnect) { window.__wirtDispatchPortConnect(\(json)); }"
+		webView.evaluateJavaScript(script, completionHandler: nil)
+	}
+
+	public func dispatchPortMessage(
+		extensionId: String,
+		portId: String,
+		message: Any
+	) {
+		guard let webView = backgroundWebViews[extensionId] else { return }
+		let payload: [String: Any] = [
+			"portId": portId,
+			"message": message,
+		]
+		guard let data = try? JSONSerialization.data(withJSONObject: payload),
+			let json = String(data: data, encoding: .utf8)
+		else { return }
+		let script =
+			"if (window.__wirtDispatchPortMessage) { window.__wirtDispatchPortMessage(\(json)); }"
+		webView.evaluateJavaScript(script, completionHandler: nil)
+	}
+
+	public func dispatchPortDisconnect(
+		extensionId: String,
+		portId: String
+	) {
+		guard let webView = backgroundWebViews[extensionId] else { return }
+		let payload: [String: Any] = [
+			"portId": portId
+		]
+		guard let data = try? JSONSerialization.data(withJSONObject: payload),
+			let json = String(data: data, encoding: .utf8)
+		else { return }
+		let script =
+			"if (window.__wirtDispatchPortDisconnect) { window.__wirtDispatchPortDisconnect(\(json)); }"
+		webView.evaluateJavaScript(script, completionHandler: nil)
 	}
 
 	public func dispatchActionClick(extensionId: String, tabMetadata: [String: Any]) {
@@ -466,6 +526,32 @@ public final class ExtensionRuntime: NSObject, WKURLSchemeHandler, WKScriptMessa
 			)
 			respondToBridge(
 				extensionId: extId, requestId: requestId, result: ["status": "success"], error: nil)
+
+		case "runtime.portConnect":
+			let portId = dict["portId"] as? String ?? ""
+			let name = dict["name"] as? String ?? ""
+			dispatchPortConnect(
+				extensionId: extId,
+				portId: portId,
+				name: name,
+				sender: ["id": extId]
+			)
+
+		case "runtime.portPostMessage":
+			let portId = dict["portId"] as? String ?? ""
+			let messagePayload = dict["message"] ?? [:]
+			dispatchPortMessage(
+				extensionId: extId,
+				portId: portId,
+				message: messagePayload
+			)
+
+		case "runtime.portDisconnect":
+			let portId = dict["portId"] as? String ?? ""
+			dispatchPortDisconnect(
+				extensionId: extId,
+				portId: portId
+			)
 
 		default:
 			break

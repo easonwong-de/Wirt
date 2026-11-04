@@ -142,7 +142,9 @@ struct OptionsWebViewRepresentable: NSViewRepresentable {
 		if #available(macOS 13.3, *) {
 			webView.isInspectable = true
 		}
-		if let url = URL(string: "ext-ui://\(extensionId)/\(optionsPage)") {
+		let encodedId =
+			extensionId.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? extensionId
+		if let url = URL(string: "ext-ui://\(encodedId)/\(optionsPage)") {
 			webView.load(URLRequest(url: url))
 		}
 
@@ -154,7 +156,10 @@ struct OptionsWebViewRepresentable: NSViewRepresentable {
 	func updateNSView(_ nsView: WebViewHostView, context: Context) {
 		if context.coordinator.lastReloadToken != reloadToken {
 			context.coordinator.lastReloadToken = reloadToken
-			if let url = URL(string: "ext-ui://\(extensionId)/\(optionsPage)") {
+			let encodedId =
+				extensionId.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
+				?? extensionId
+			if let url = URL(string: "ext-ui://\(encodedId)/\(optionsPage)") {
 				holder.webView?.load(URLRequest(url: url))
 			}
 		}
