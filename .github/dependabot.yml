@@ -8,3 +8,11 @@ updates:
       dependencies:
         patterns:
           - "*"
+  - package-ecosystem: bun
+    directory: /TestExtension
+    schedule:
+      interval: weekly
+    groups:
+      dependencies:
+        patterns:
+          - "*"
