@@ -1,4 +1,8 @@
-import type { CounterMessage, CounterResponse } from "@/types/extension";
+import type {
+	CounterMessage,
+	CounterResponse,
+	CounterState,
+} from "@/types/extension";
 import { getStoredState, setStoredState } from "@/utils/storage";
 
 const TAG = "[TestExtension:Background]";
@@ -133,7 +137,9 @@ export default defineBackground(() => {
 
 	browser.storage?.onChanged?.addListener((changes, areaName) => {
 		if (changes.counterState) {
-			const nextCount = changes.counterState.newValue?.count ?? 0;
+			const counterState = changes.counterState.newValue as
+				CounterState | undefined;
+			const nextCount = counterState?.count ?? 0;
 			void updateBadge(nextCount);
 			console.log(
 				TAG,

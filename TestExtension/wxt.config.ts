@@ -19,7 +19,7 @@ export default defineConfig({
 		name: "__MSG_extName__",
 		description: "__MSG_extDescription__",
 		version: "0.1.0",
-		author: "Wirt (Debug)",
+		author: "Wirt (Debug)" as any,
 		homepage_url: "https://github.com/easonwong-de/wirt",
 		default_locale: "en",
 		permissions: [
