@@ -1,0 +1,6 @@
+extName: Wirt Test Extension
+extDescription: Preloaded WXT test suite for background, content script, popup, options, sidebar, storage, messaging, and tabs APIs
+greetingMessage: Hello from Wirt i18n ($1)
+popupTitle: Wirt API Test Suite
+optionsTitle: Test Extension Preferences
+sidebarTitle: Test Extension Side Panel

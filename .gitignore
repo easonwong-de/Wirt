@@ -118,6 +118,10 @@ WirtExtension/WebExtension/.output/
 WirtExtension/WebExtension/.wxt/
 WirtExtension/Resources/
 !WirtExtension/WebExtension/public/icon/
+TestExtension/node_modules/
+TestExtension/.output/
+TestExtension/.wxt/
+!TestExtension/public/icon/
 
 .derivedData/
 

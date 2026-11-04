@@ -95,6 +95,7 @@
 		DOC000030000000000000000 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = SOURCE_ROOT; };
 		DOC000040000000000000000 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = SOURCE_ROOT; };
 		WEBEXT000000000000000001 /* WebExtension */ = {isa = PBXFileReference; lastKnownFileType = folder; path = WebExtension; sourceTree = "<group>"; };
+		TESTEXT000000000000000001 /* TestExtension */ = {isa = PBXFileReference; lastKnownFileType = folder; path = TestExtension; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +117,7 @@
 			children = (
 				9BFC4B42307EDCE80098F3AD /* Wirt */,
 				9BFC4B5F307EDCE90098F3AD /* WirtExtension */,
+				TESTEXT000000000000000001 /* TestExtension */,
 				DOC000010000000000000000 /* Documentation */,
 				9BFC4B41307EDCE80098F3AD /* Products */,
 			);
@@ -189,6 +191,7 @@
 			buildPhases = (
 				9BFC4B3C307EDCE80098F3AD /* Sources */,
 				9BFC4B3D307EDCE80098F3AD /* Frameworks */,
+				WXT000020000000000000000 /* Build Preload Test Extension (Debug) */,
 				9BFC4B3E307EDCE80098F3AD /* Resources */,
 				9BFC4B68307EDCE90098F3AD /* Embed Foundation Extensions */,
 				CPF100010000000000000000 /* Embed Launch Agents */,
@@ -277,6 +280,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		WXT000020000000000000000 /* Build Preload Test Extension (Debug) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Preload Test Extension (Debug)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n\texport PATH=\"$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\n\tcd \"$SRCROOT/TestExtension\"\n\tbun install\n\tbun run build\nfi\n";
+		};
 		WXT000010000000000000000 /* Build Web Extension with Bun & WXT */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -375,7 +397,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;

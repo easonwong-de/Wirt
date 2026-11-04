@@ -34,6 +34,7 @@ rm -rf "$HOME/Library/Containers/de.easonwong.Wirt.debug.Extension"
 
 echo "==> Cleaning WebExtension build artifacts..."
 rm -rf WirtExtension/WebExtension/.output WirtExtension/WebExtension/.wxt
+rm -rf TestExtension/.output TestExtension/.wxt
 
 echo "==> Cleaning Xcode build artifacts..."
 xcodebuild -project Wirt.xcodeproj -scheme Wirt -destination 'platform=macOS' clean -quiet

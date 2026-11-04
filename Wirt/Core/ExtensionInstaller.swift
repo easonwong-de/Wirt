@@ -20,7 +20,31 @@ public final class ExtensionInstaller: Sendable {
 			"\(subDirectory)/Extensions", isDirectory: true)
 		try? FileManager.default.createDirectory(at: hostDir, withIntermediateDirectories: true)
 		self.storageDirectory = hostDir
+		#if DEBUG
+			preloadBundledExtensions()
+		#endif
 	}
+
+	#if DEBUG
+		private func preloadBundledExtensions() {
+			guard
+				let resourceURL = Bundle.main.resourceURL?.appendingPathComponent(
+					"PreloadExtensions", isDirectory: true),
+				FileManager.default.fileExists(atPath: resourceURL.path),
+				let items = try? FileManager.default.contentsOfDirectory(
+					at: resourceURL, includingPropertiesForKeys: nil)
+			else {
+				return
+			}
+
+			for item in items where item.hasDirectoryPath {
+				let manifest = item.appendingPathComponent("manifest.json")
+				if FileManager.default.fileExists(atPath: manifest.path) {
+					_ = try? installFromDisk(at: item)
+				}
+			}
+		}
+	#endif
 
 	public func ingest(from url: URL) async throws -> ExtensionDescriptor {
 		var request = URLRequest(url: url)

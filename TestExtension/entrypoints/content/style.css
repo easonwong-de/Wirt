@@ -1,0 +1,85 @@
+#wirt-test-overlay {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 2147483647;
+	font-family:
+		-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+		system-ui, sans-serif;
+	color: #ffffff;
+	background: rgba(28, 28, 30, 0.94);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 14px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+	padding: 12px 16px;
+	user-select: none;
+	-webkit-user-select: none;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	min-width: 170px;
+}
+
+.wirt-overlay-title {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: rgba(255, 255, 255, 0.65);
+}
+
+.wirt-overlay-number {
+	font-size: 38px;
+	font-weight: 700;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	color: #0a84ff;
+}
+
+.wirt-overlay-meta {
+	font-size: 10px;
+	color: rgba(255, 255, 255, 0.45);
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.wirt-overlay-section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+}
+
+.wirt-overlay-section-label {
+	font-size: 9px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: rgba(255, 255, 255, 0.5);
+	text-align: left;
+}
+
+.wirt-overlay-controls {
+	display: flex;
+	gap: 6px;
+	width: 100%;
+}
+
+.wirt-overlay-btn {
+	flex: 1;
+	background: rgba(255, 255, 255, 0.12);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 6px;
+	color: #ffffff;
+	font-size: 13px;
+	font-weight: 600;
+	padding: 5px 0;
+	cursor: default;
+	text-align: center;
+}
+
+.wirt-overlay-btn:hover {
+	background: rgba(255, 255, 255, 0.22);
+}
