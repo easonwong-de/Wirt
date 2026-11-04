@@ -51,6 +51,28 @@ type NativeEnvelope =
 			readonly payload: unknown;
 	  }
 	| {
+			readonly type: "RUNTIME_PORT_CONNECT";
+			readonly extensionId: string;
+			readonly portId: string;
+			readonly name: string;
+			readonly source: {
+				readonly tabId?: number;
+				readonly frameId?: number;
+				readonly url?: string;
+			};
+	  }
+	| {
+			readonly type: "RUNTIME_PORT_POST_MESSAGE";
+			readonly extensionId: string;
+			readonly portId: string;
+			readonly payload: unknown;
+	  }
+	| {
+			readonly type: "RUNTIME_PORT_DISCONNECT";
+			readonly extensionId: string;
+			readonly portId: string;
+	  }
+	| {
 			readonly type: "STORAGE_GET";
 			readonly extensionId: string;
 			readonly keys?: unknown;
@@ -235,6 +257,64 @@ export default defineBackground(() => {
 						const message =
 							err instanceof Error ? err.message : String(err);
 						logError("Error in RUNTIME_SEND_MESSAGE:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "RUNTIME_PORT_CONNECT") {
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "RUNTIME_PORT_CONNECT",
+					extensionId: request.extensionId,
+					portId: request.portId,
+					name: request.name,
+					source: {
+						tabId: sender.tab?.id,
+						frameId: sender.frameId,
+						url: sender.url,
+					},
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in RUNTIME_PORT_CONNECT:", message);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "RUNTIME_PORT_POST_MESSAGE") {
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "RUNTIME_PORT_POST_MESSAGE",
+					extensionId: request.extensionId,
+					portId: request.portId,
+					payload: request.payload,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError(
+							"Error in RUNTIME_PORT_POST_MESSAGE:",
+							message,
+						);
+						sendResponse({ error: message });
+					});
+				return true;
+			}
+
+			if (request.type === "RUNTIME_PORT_DISCONNECT") {
+				sendNativeEnvelope<NativeGenericReply>({
+					type: "RUNTIME_PORT_DISCONNECT",
+					extensionId: request.extensionId,
+					portId: request.portId,
+				})
+					.then((res) => sendResponse(res))
+					.catch((err: Error | string) => {
+						const message =
+							err instanceof Error ? err.message : String(err);
+						logError("Error in RUNTIME_PORT_DISCONNECT:", message);
 						sendResponse({ error: message });
 					});
 				return true;

@@ -63,6 +63,95 @@
 		forwardConsole("error", args);
 	};
 
+	const activePorts = new Map();
+
+	window.__wirtDispatchPortConnect = (envelope) => {
+		const { portId, name, sender } = envelope;
+		const port = createPort(portId, name, sender);
+		activePorts.set(portId, port);
+		for (const listener of shim.runtime.onConnect.listeners) {
+			try {
+				listener(port);
+			} catch (err) {
+				console.error("[Wirt:Shim] onConnect listener error:", err);
+			}
+		}
+	};
+
+	window.__wirtDispatchPortMessage = (envelope) => {
+		const { portId, message } = envelope;
+		const port = activePorts.get(portId);
+		if (!port) return;
+		for (const listener of port.onMessage.listeners) {
+			try {
+				listener(message, port);
+			} catch (err) {
+				console.error("[Wirt:Shim] port.onMessage error:", err);
+			}
+		}
+	};
+
+	window.__wirtDispatchPortDisconnect = (envelope) => {
+		const { portId } = envelope;
+		const port = activePorts.get(portId);
+		if (!port) return;
+		activePorts.delete(portId);
+		for (const listener of port.onDisconnect.listeners) {
+			try {
+				listener(port);
+			} catch (err) {
+				console.error("[Wirt:Shim] port.onDisconnect error:", err);
+			}
+		}
+	};
+
+	function createPort(portId, name, sender) {
+		return {
+			name: name || "",
+			sender: sender || { id: extId },
+			onMessage: {
+				listeners: new Set(),
+				addListener(fn) {
+					this.listeners.add(fn);
+				},
+				removeListener(fn) {
+					this.listeners.delete(fn);
+				},
+				hasListener(fn) {
+					return this.listeners.has(fn);
+				},
+			},
+			onDisconnect: {
+				listeners: new Set(),
+				addListener(fn) {
+					this.listeners.add(fn);
+				},
+				removeListener(fn) {
+					this.listeners.delete(fn);
+				},
+				hasListener(fn) {
+					return this.listeners.has(fn);
+				},
+			},
+			postMessage(msg) {
+				window.webkit.messageHandlers.hostBridge.postMessage({
+					api: "runtime.portPostMessage",
+					extensionId: extId,
+					portId,
+					message: msg,
+				});
+			},
+			disconnect() {
+				activePorts.delete(portId);
+				window.webkit.messageHandlers.hostBridge.postMessage({
+					api: "runtime.portDisconnect",
+					extensionId: extId,
+					portId,
+				});
+			},
+		};
+	}
+
 	window.__wirtBridgeCallback = (requestId, result, error) => {
 		const entry = pendingCallbacks.get(requestId);
 		if (!entry) return;
@@ -171,8 +260,43 @@
 					return this.listeners.has(fn);
 				},
 			},
-			getURL: (path) =>
-				`ext-bg://${extId}/${(path || "").replace(/^\//, "")}`,
+			connect: (extensionId, connectInfo) => {
+				let targetId = extId;
+				let info = connectInfo;
+				if (typeof extensionId === "object" && extensionId !== null) {
+					info = extensionId;
+				} else if (typeof extensionId === "string") {
+					targetId = extensionId;
+				}
+				const portId = `${extId}_port_${Date.now()}_${++requestCounter}`;
+				const port = createPort(portId, info?.name || "", {
+					id: extId,
+				});
+				activePorts.set(portId, port);
+				window.webkit.messageHandlers.hostBridge.postMessage({
+					api: "runtime.portConnect",
+					extensionId: targetId,
+					portId,
+					name: info?.name || "",
+				});
+				return port;
+			},
+			onConnect: {
+				listeners: new Set(),
+				addListener(fn) {
+					this.listeners.add(fn);
+				},
+				removeListener(fn) {
+					this.listeners.delete(fn);
+				},
+				hasListener(fn) {
+					return this.listeners.has(fn);
+				},
+			},
+			getURL: (path) => {
+				const encodedId = encodeURIComponent(extId);
+				return `ext-bg://${encodedId}/${(path || "").replace(/^\//, "")}`;
+			},
 			openOptionsPage: (callback) => {
 				const promise = callHostBridge("runtime.openOptionsPage", {});
 				if (typeof callback === "function") {

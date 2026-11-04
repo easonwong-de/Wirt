@@ -111,6 +111,23 @@ export type RuntimeMessage =
 			readonly payload: unknown;
 	  }
 	| {
+			readonly type: "RUNTIME_PORT_CONNECT";
+			readonly extensionId: string;
+			readonly portId: string;
+			readonly name: string;
+	  }
+	| {
+			readonly type: "RUNTIME_PORT_POST_MESSAGE";
+			readonly extensionId: string;
+			readonly portId: string;
+			readonly payload: unknown;
+	  }
+	| {
+			readonly type: "RUNTIME_PORT_DISCONNECT";
+			readonly extensionId: string;
+			readonly portId: string;
+	  }
+	| {
 			readonly type: "INSTALL_PACKAGE_FROM_URL";
 			readonly downloadUrl: string;
 			readonly referrer?: string;

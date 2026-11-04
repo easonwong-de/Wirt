@@ -18,6 +18,20 @@ export interface StorageAreaShim {
 	) => Promise<{ readonly status: "success" }>;
 }
 
+export interface RuntimePortShim {
+	readonly name: string;
+	readonly onMessage: {
+		readonly addListener: (fn: (msg: unknown) => void) => void;
+		readonly removeListener: (fn: (msg: unknown) => void) => void;
+	};
+	readonly onDisconnect: {
+		readonly addListener: (fn: () => void) => void;
+		readonly removeListener: (fn: () => void) => void;
+	};
+	readonly postMessage: (msg: unknown) => void;
+	readonly disconnect: () => void;
+}
+
 export interface ScopedShim {
 	readonly runtime: {
 		readonly id: string;
@@ -25,6 +39,16 @@ export interface ScopedShim {
 			payload: unknown,
 			callback?: (res: NativeGenericReply) => void,
 		) => Promise<NativeGenericReply>;
+		readonly connect: (
+			extensionIdOrInfo?: string | { readonly name?: string },
+			connectInfo?: { readonly name?: string },
+		) => RuntimePortShim;
+		readonly onConnect: {
+			readonly addListener: (fn: (port: RuntimePortShim) => void) => void;
+			readonly removeListener: (
+				fn: (port: RuntimePortShim) => void,
+			) => void;
+		};
 		readonly onMessage: {
 			readonly addListener: () => void;
 			readonly removeListener: () => void;
@@ -71,6 +95,64 @@ export function createShim(extensionId: string): ScopedShim {
 				}
 				return promise;
 			},
+			connect: (extensionIdOrInfo, connectInfo) => {
+				let targetId = extensionId;
+				let info = connectInfo;
+				if (
+					typeof extensionIdOrInfo === "object" &&
+					extensionIdOrInfo !== null
+				) {
+					info = extensionIdOrInfo;
+				} else if (typeof extensionIdOrInfo === "string") {
+					targetId = extensionIdOrInfo;
+				}
+				const portId = `port_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+				const messageListeners = new Set<(msg: unknown) => void>();
+				const disconnectListeners = new Set<() => void>();
+
+				void safeSendMessage<NativeGenericReply>({
+					type: "RUNTIME_PORT_CONNECT",
+					extensionId: targetId,
+					portId,
+					name: info?.name || "",
+				});
+
+				return {
+					name: info?.name || "",
+					onMessage: {
+						addListener(fn) {
+							messageListeners.add(fn);
+						},
+						removeListener(fn) {
+							messageListeners.delete(fn);
+						},
+					},
+					onDisconnect: {
+						addListener(fn) {
+							disconnectListeners.add(fn);
+						},
+						removeListener(fn) {
+							disconnectListeners.delete(fn);
+						},
+					},
+					postMessage(msg) {
+						void safeSendMessage<NativeGenericReply>({
+							type: "RUNTIME_PORT_POST_MESSAGE",
+							extensionId: targetId,
+							portId,
+							payload: msg,
+						});
+					},
+					disconnect() {
+						void safeSendMessage<NativeGenericReply>({
+							type: "RUNTIME_PORT_DISCONNECT",
+							extensionId: targetId,
+							portId,
+						});
+					},
+				};
+			},
+			onConnect: { addListener: () => {}, removeListener: () => {} },
 			onMessage: { addListener: () => {}, removeListener: () => {} },
 			getURL: (path: string) =>
 				`ext-res://${extensionId}/${path.replace(/^\//, "")}`,

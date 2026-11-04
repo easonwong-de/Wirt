@@ -76,6 +76,45 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
 				}
 			}
 
+		case "RUNTIME_PORT_CONNECT":
+			let extId = message["extensionId"] as? String ?? ""
+			let portId = message["portId"] as? String ?? ""
+			let name = message["name"] as? String ?? ""
+			let source = message["source"] as? [String: Any] ?? [:]
+			Task { @MainActor in
+				ExtensionRuntime.shared.dispatchPortConnect(
+					extensionId: extId,
+					portId: portId,
+					name: name,
+					sender: source
+				)
+				reply(["status": "success"])
+			}
+
+		case "RUNTIME_PORT_POST_MESSAGE":
+			let extId = message["extensionId"] as? String ?? ""
+			let portId = message["portId"] as? String ?? ""
+			let payload = message["payload"] ?? [:]
+			Task { @MainActor in
+				ExtensionRuntime.shared.dispatchPortMessage(
+					extensionId: extId,
+					portId: portId,
+					message: payload
+				)
+				reply(["status": "success"])
+			}
+
+		case "RUNTIME_PORT_DISCONNECT":
+			let extId = message["extensionId"] as? String ?? ""
+			let portId = message["portId"] as? String ?? ""
+			Task { @MainActor in
+				ExtensionRuntime.shared.dispatchPortDisconnect(
+					extensionId: extId,
+					portId: portId
+				)
+				reply(["status": "success"])
+			}
+
 		case "STORAGE_GET":
 			let extId = message["extensionId"] as? String ?? ""
 			let keys = message["keys"]
