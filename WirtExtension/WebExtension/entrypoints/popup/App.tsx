@@ -22,6 +22,7 @@ export const App: React.FC = () => {
 	>([]);
 	const [activeExtension, setActiveExtension] =
 		useState<ExtensionDescriptor | null>(null);
+	const [popupUrl, setPopupUrl] = useState<string>("");
 	const [popupHtml, setPopupHtml] = useState<string>("");
 	const [activeTab, setActiveTab] = useState<ActiveTab | null>(null);
 
@@ -60,6 +61,116 @@ export const App: React.FC = () => {
 		void loadExtensions();
 	}, [loadExtensions]);
 
+	useEffect(() => {
+		const handleMessage = async (event: MessageEvent) => {
+			const data = event.data;
+			if (!data || data.type !== "WIRT_POPUP_BRIDGE_REQUEST") return;
+
+			const sourceWindow = event.source as Window | null;
+			if (!sourceWindow) return;
+
+			const {
+				api,
+				extensionId,
+				requestId,
+				payload,
+				keys,
+				items,
+				portId,
+				name,
+				message,
+			} = data;
+
+			const reply = (result: unknown, error?: string) => {
+				sourceWindow.postMessage(
+					{
+						type: "WIRT_POPUP_BRIDGE_RESPONSE",
+						requestId,
+						result,
+						error,
+					},
+					"*",
+				);
+			};
+
+			try {
+				if (api === "runtime.sendMessage") {
+					const res = await browser.runtime.sendMessage({
+						type: "RUNTIME_SEND_MESSAGE",
+						extensionId,
+						payload,
+					});
+					reply(res);
+				} else if (api === "storage.get") {
+					const res = (await browser.runtime.sendMessage({
+						type: "STORAGE_GET",
+						extensionId,
+						keys,
+					})) as { readonly result?: unknown } | undefined;
+					reply(res?.result ?? {});
+				} else if (api === "storage.set") {
+					await browser.runtime.sendMessage({
+						type: "STORAGE_SET",
+						extensionId,
+						items: items ?? {},
+					});
+					reply({ status: "success" });
+				} else if (api === "storage.remove") {
+					await browser.runtime.sendMessage({
+						type: "STORAGE_REMOVE",
+						extensionId,
+						keys: keys ?? [],
+					});
+					reply({ status: "success" });
+				} else if (api === "storage.clear") {
+					await browser.runtime.sendMessage({
+						type: "STORAGE_CLEAR",
+						extensionId,
+					});
+					reply({ status: "success" });
+				} else if (api === "runtime.portConnect") {
+					await browser.runtime.sendMessage({
+						type: "RUNTIME_PORT_CONNECT",
+						extensionId,
+						portId,
+						name: name ?? "",
+					});
+					reply({ status: "success" });
+				} else if (api === "runtime.portPostMessage") {
+					await browser.runtime.sendMessage({
+						type: "RUNTIME_PORT_POST_MESSAGE",
+						extensionId,
+						portId,
+						payload: message,
+					});
+					reply({ status: "success" });
+				} else if (api === "runtime.portDisconnect") {
+					await browser.runtime.sendMessage({
+						type: "RUNTIME_PORT_DISCONNECT",
+						extensionId,
+						portId,
+					});
+					reply({ status: "success" });
+				} else if (api === "runtime.openOptionsPage") {
+					await browser.runtime.sendMessage({
+						type: "OPEN_HOST_APP",
+					});
+					reply({ status: "success" });
+				} else {
+					reply(null, `Unsupported API: ${api}`);
+				}
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				reply(null, msg);
+			}
+		};
+
+		window.addEventListener("message", handleMessage);
+		return () => {
+			window.removeEventListener("message", handleMessage);
+		};
+	}, []);
+
 	const handleOpenHostApp = useCallback(async () => {
 		try {
 			await browser.runtime.sendMessage({ type: "OPEN_HOST_APP" });
@@ -72,17 +183,24 @@ export const App: React.FC = () => {
 		async (ext: ExtensionDescriptor) => {
 			if (ext.actionType === "popup") {
 				setActiveExtension(ext);
+				setPopupUrl("");
 				setPopupHtml("");
 				try {
 					const res = (await browser.runtime.sendMessage({
 						type: "GET_POPUP_RESOURCES",
 						extensionId: ext.id,
 						popupPath: ext.popupPath,
-					})) as { readonly html?: string } | undefined;
-					setPopupHtml(
-						res?.html ??
-							"<html><body><p>Popup could not be loaded.</p></body></html>",
-					);
+					})) as
+						| { readonly url?: string; readonly html?: string }
+						| undefined;
+					if (res?.url) {
+						setPopupUrl(res.url);
+					} else {
+						setPopupHtml(
+							res?.html ??
+								"<html><body><p>Popup could not be loaded.</p></body></html>",
+						);
+					}
 				} catch {
 					setPopupHtml(
 						"<html><body><p>Failed to load popup.</p></body></html>",
@@ -118,7 +236,8 @@ export const App: React.FC = () => {
 						actionTooltip={i18n.t("closeTooltip")}
 					/>
 					<PopupFrame
-						srcDoc={popupHtml}
+						src={popupUrl || undefined}
+						srcDoc={popupUrl ? undefined : popupHtml}
 						title={activeExtension.name}
 					/>
 				</>

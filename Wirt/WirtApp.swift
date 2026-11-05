@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 			NSApp.setActivationPolicy(.accessory)
 			ExtensionListener.shared.start()
 			ExtensionRuntime.shared.bootInstalledExtensions()
+			ExtensionServer.shared.start()
 			return
 		}
 
@@ -212,6 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 		NSApp.setActivationPolicy(.regular)
 		ExtensionListener.shared.start()
 		ExtensionRuntime.shared.bootInstalledExtensions()
+		ExtensionServer.shared.start()
 		showSettings()
 	}
 

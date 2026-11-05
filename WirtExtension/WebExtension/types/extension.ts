@@ -71,6 +71,7 @@ export interface NativeOpenHostAppReply {
 export interface NativePopupResourcesReply {
 	readonly status: "success" | "error";
 	readonly html?: string;
+	readonly url?: string;
 	readonly error?: string;
 }
 
