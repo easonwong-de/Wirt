@@ -4,16 +4,56 @@
 	const pendingCallbacks = new Map();
 	let requestCounter = 0;
 
+	const hasHostBridge =
+		typeof window.webkit !== "undefined" &&
+		window.webkit?.messageHandlers?.hostBridge != null;
+
 	function callHostBridge(api, payload) {
 		return new Promise((resolve, reject) => {
 			const requestId = `${extId}_${Date.now()}_${++requestCounter}`;
 			pendingCallbacks.set(requestId, { resolve, reject });
-			window.webkit.messageHandlers.hostBridge.postMessage({
-				api,
-				extensionId: extId,
-				requestId,
-				...payload,
-			});
+
+			if (hasHostBridge) {
+				window.webkit.messageHandlers.hostBridge.postMessage({
+					api,
+					extensionId: extId,
+					requestId,
+					...payload,
+				});
+				return;
+			}
+
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage(
+					{
+						type: "WIRT_POPUP_BRIDGE_REQUEST",
+						extensionId: extId,
+						requestId,
+						api,
+						...payload,
+					},
+					"*",
+				);
+				return;
+			}
+
+			pendingCallbacks.delete(requestId);
+			reject(new Error("Bridge unavailable"));
+		});
+	}
+
+	if (!hasHostBridge) {
+		window.addEventListener("message", (event) => {
+			const data = event.data;
+			if (!data || data.type !== "WIRT_POPUP_BRIDGE_RESPONSE") return;
+			const entry = pendingCallbacks.get(data.requestId);
+			if (!entry) return;
+			pendingCallbacks.delete(data.requestId);
+			if (data.error) {
+				entry.reject(new Error(data.error));
+			} else {
+				entry.resolve(data.result);
+			}
 		});
 	}
 
@@ -25,6 +65,7 @@
 	};
 
 	function forwardConsole(level, args) {
+		if (!hasHostBridge) return;
 		try {
 			const serialized = Array.from(args)
 				.map((arg) => {
@@ -134,18 +175,14 @@
 				},
 			},
 			postMessage(msg) {
-				window.webkit.messageHandlers.hostBridge.postMessage({
-					api: "runtime.portPostMessage",
-					extensionId: extId,
+				callHostBridge("runtime.portPostMessage", {
 					portId,
 					message: msg,
 				});
 			},
 			disconnect() {
 				activePorts.delete(portId);
-				window.webkit.messageHandlers.hostBridge.postMessage({
-					api: "runtime.portDisconnect",
-					extensionId: extId,
+				callHostBridge("runtime.portDisconnect", {
 					portId,
 				});
 			},
@@ -171,11 +208,13 @@
 		const sendResponse = (payload) => {
 			if (replySent) return;
 			replySent = true;
-			window.webkit.messageHandlers.hostBridge.postMessage({
-				api: "runtime.onMessage.reply",
-				callbackId: correlationId,
-				payload: payload ?? {},
-			});
+			if (hasHostBridge) {
+				window.webkit.messageHandlers.hostBridge.postMessage({
+					api: "runtime.onMessage.reply",
+					callbackId: correlationId,
+					payload: payload ?? {},
+				});
+			}
 		};
 
 		for (const listener of shim.runtime.onMessage.listeners) {
@@ -273,8 +312,7 @@
 					id: extId,
 				});
 				activePorts.set(portId, port);
-				window.webkit.messageHandlers.hostBridge.postMessage({
-					api: "runtime.portConnect",
+				callHostBridge("runtime.portConnect", {
 					extensionId: targetId,
 					portId,
 					name: info?.name || "",
@@ -320,16 +358,12 @@
 		},
 		action: {
 			setBadgeText: (details) => {
-				window.webkit.messageHandlers.hostBridge.postMessage({
-					api: "action.setBadgeText",
-					extensionId: extId,
+				callHostBridge("action.setBadgeText", {
 					text: details.text,
 				});
 			},
 			setBadgeBackgroundColor: (details) => {
-				window.webkit.messageHandlers.hostBridge.postMessage({
-					api: "action.setBadgeBackgroundColor",
-					extensionId: extId,
+				callHostBridge("action.setBadgeBackgroundColor", {
 					color: details.color,
 				});
 			},

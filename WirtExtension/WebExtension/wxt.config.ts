@@ -20,6 +20,10 @@ export default defineConfig({
 		permissions: ["nativeMessaging", "storage", "tabs", "webNavigation"],
 		host_permissions: ["<all_urls>"],
 		default_locale: "en",
+		content_security_policy: {
+			extension_pages:
+				"script-src 'self'; frame-src 'self' http://127.0.0.1:* http://localhost:*;",
+		},
 	},
 	outDir: bundleResourcesDir,
 	outDirTemplate: "",

@@ -141,8 +141,11 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
 		case "GET_POPUP_RESOURCES":
 			let extId = message["extensionId"] as? String ?? ""
 			let popupPath = message["popupPath"] as? String ?? ""
-			let html = self.loadPopupHtml(extensionId: extId, popupPath: popupPath)
-			reply(["status": "success", "html": html])
+			let port = ExtensionServer.shared.port
+			let token = ExtensionServer.shared.sessionToken
+			let cleanedPath = popupPath.hasPrefix("/") ? String(popupPath.dropFirst()) : popupPath
+			let popupUrl = "http://127.0.0.1:\(port)/\(token)/\(extId)/\(cleanedPath)"
+			reply(["status": "success", "url": popupUrl, "port": Int(port)])
 
 		case "INSTALL_PACKAGE_FROM_URL":
 			let downloadUrl = message["downloadUrl"] as? String ?? ""
@@ -197,43 +200,6 @@ public final class ExtensionListener: NSObject, NSXPCListenerDelegate, HostXPCPr
 		default:
 			reply(["status": "unknown_message", "type": type])
 		}
-	}
-
-	private func loadPopupHtml(extensionId: String, popupPath: String) -> String {
-		let baseDir = ExtensionInstaller.shared.storageDirectory.appendingPathComponent(
-			extensionId, isDirectory: true)
-		let cleanedPath = popupPath.hasPrefix("/") ? String(popupPath.dropFirst()) : popupPath
-		let fileUrl = baseDir.appendingPathComponent(cleanedPath)
-
-		guard let content = try? String(contentsOf: fileUrl, encoding: .utf8) else {
-			return "<html><body><p>Popup not found.</p></body></html>"
-		}
-
-		let messages = ExtensionInstaller.shared.loadLocaleMessages(in: baseDir, defaultLocale: nil)
-		let messagesData =
-			(try? JSONSerialization.data(withJSONObject: messages)) ?? Data("{}".utf8)
-		let messagesJson = String(data: messagesData, encoding: .utf8) ?? "{}"
-
-		let resolvedContent = ExtensionInstaller.shared.resolveI18nString(
-			content, messages: messages, extensionId: extensionId)
-
-		let shimURL = Bundle.main.url(
-			forResource: "chrome-shim", withExtension: "js", subdirectory: "shim")
-		let shimCode =
-			(shimURL != nil ? (try? String(contentsOf: shimURL!, encoding: .utf8)) : nil) ?? ""
-		let injectedHeader = """
-			<script>
-			window.__HOST_EXTENSION_ID__ = '\(extensionId)';
-			window.__HOST_I18N_MESSAGES__ = \(messagesJson);
-			\(shimCode)
-			</script>
-			"""
-
-		if resolvedContent.contains("<head>") {
-			return resolvedContent.replacingOccurrences(
-				of: "<head>", with: "<head>\(injectedHeader)")
-		}
-		return injectedHeader + resolvedContent
 	}
 
 	@MainActor

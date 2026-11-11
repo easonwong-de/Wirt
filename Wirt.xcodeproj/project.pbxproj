@@ -19,6 +19,7 @@
 		BFE100040000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */; };
 		BFE100050000000000000000 /* Core/ExtensionListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100050000000000000000 /* Core/ExtensionListener.swift */; };
 		BFE100080000000000000000 /* Core/ExtensionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE100080000000000000000 /* Core/ExtensionStorage.swift */; };
+		BFE1000A0000000000000000 /* Core/ExtensionServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE1000A0000000000000000 /* Core/ExtensionServer.swift */; };
 		BFE200010000000000000000 /* Views/AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE200010000000000000000 /* Views/AppState.swift */; };
 		BFE200020000000000000000 /* Views/LiquidGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE200020000000000000000 /* Views/LiquidGlass.swift */; };
 		BFE200030000000000000000 /* Views/SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRE200030000000000000000 /* Views/SidebarView.swift */; };
@@ -82,6 +83,7 @@
 		FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocols/HostXPCProtocol.swift; sourceTree = "<group>"; };
 		FRE100050000000000000000 /* Core/ExtensionListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionListener.swift; sourceTree = "<group>"; };
 		FRE100080000000000000000 /* Core/ExtensionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionStorage.swift; sourceTree = "<group>"; };
+		FRE1000A0000000000000000 /* Core/ExtensionServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ExtensionServer.swift; sourceTree = "<group>"; };
 		FRE200010000000000000000 /* Views/AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/AppState.swift; sourceTree = "<group>"; };
 		FRE200020000000000000000 /* Views/LiquidGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/LiquidGlass.swift; sourceTree = "<group>"; };
 		FRE200030000000000000000 /* Views/SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SidebarView.swift; sourceTree = "<group>"; };
@@ -143,6 +145,7 @@
 				FRE100040000000000000000 /* Protocols/HostXPCProtocol.swift */,
 				FRE100050000000000000000 /* Core/ExtensionListener.swift */,
 				FRE100080000000000000000 /* Core/ExtensionStorage.swift */,
+				FRE1000A0000000000000000 /* Core/ExtensionServer.swift */,
 				FRE200010000000000000000 /* Views/AppState.swift */,
 				FRE200020000000000000000 /* Views/LiquidGlass.swift */,
 				FRE200030000000000000000 /* Views/SidebarView.swift */,
@@ -332,6 +335,7 @@
 				BFE100040000000000000000 /* Protocols/HostXPCProtocol.swift in Sources */,
 				BFE100050000000000000000 /* Core/ExtensionListener.swift in Sources */,
 				BFE100080000000000000000 /* Core/ExtensionStorage.swift in Sources */,
+				BFE1000A0000000000000000 /* Core/ExtensionServer.swift in Sources */,
 				BFE200010000000000000000 /* Views/AppState.swift in Sources */,
 				BFE200020000000000000000 /* Views/LiquidGlass.swift in Sources */,
 				BFE200030000000000000000 /* Views/SidebarView.swift in Sources */,
